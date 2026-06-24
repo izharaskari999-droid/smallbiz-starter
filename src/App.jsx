@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 
+const EMAILJS_SERVICE_ID = "service_fx38y6i";
+const EMAILJS_TEMPLATE_ID = "template_7iaql2o";
+const EMAILJS_PUBLIC_KEY = "j3czFp8ResoC6DiuK";
+
 const BUSINESS_TYPES = [
   "Food & Beverage","Bakery / Catering","Coffee Shop / Café","Restaurant / Fast Food",
   "Retail / Store","Online / E-commerce","Dropshipping","Amazon FBA",
@@ -75,7 +79,7 @@ function Card({children,style={}}) {
 
 function PrimaryBtn({onClick,disabled,children,style={}}) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{padding:"11px 22px",borderRadius:10,background:disabled?"var(--color-background-secondary)":P.p600,color:disabled?"var(--color-text-tertiary)":"#fff",border:"none",fontWeight:500,fontSize:14,cursor:disabled?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:7,transition:"opacity 0.15s",...style}}>
+    <button onClick={onClick} disabled={disabled} style={{padding:"11px 22px",borderRadius:10,background:disabled?"var(--color-background-secondary)":P.p600,color:disabled?"var(--color-text-tertiary)":"#fff",border:"none",fontWeight:500,fontSize:14,cursor:disabled?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:7,...style}}>
       {children}
     </button>
   );
@@ -91,7 +95,7 @@ function GhostBtn({onClick,children,style={}}) {
 
 function Pill({children,active,onClick}) {
   return (
-    <button onClick={onClick} style={{padding:"9px 14px",borderRadius:10,border:`1.5px solid ${active?P.p600:"var(--color-border-tertiary)"}`,background:active?P.p50:"var(--color-background-primary)",color:active?P.p800:"var(--color-text-secondary)",fontWeight:active?500:400,fontSize:13,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+    <button onClick={onClick} style={{padding:"9px 14px",borderRadius:10,border:`1.5px solid ${active?P.p600:"var(--color-border-tertiary)"}`,background:active?P.p50:"var(--color-background-primary)",color:active?P.p800:"var(--color-text-secondary)",fontWeight:active?500:400,fontSize:13,cursor:"pointer",textAlign:"left"}}>
       {children}
     </button>
   );
@@ -208,6 +212,13 @@ export default function App() {
   const [userInfo,setUserInfo]=useState({name:"",email:""});
   const chatRef=useRef(null);
 
+  useEffect(()=>{
+    const script=document.createElement("script");
+    script.src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
+    script.onload=()=>window.emailjs&&window.emailjs.init(EMAILJS_PUBLIC_KEY);
+    document.head.appendChild(script);
+  },[]);
+
   useEffect(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[chat]);
 
   const valid=[form.idea.trim().length>10,form.state&&form.city.trim(),form.type,true];
@@ -216,18 +227,28 @@ export default function App() {
     setUserInfo({name,email});
     setShowGate(false);
     setPhase("loading");
+    if(window.emailjs){
+      window.emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+        user_name:name,
+        user_email:email,
+        business_idea:form.idea,
+        city:form.city,
+        state:form.state,
+        business_type:form.type,
+      }).catch(e=>console.log("Email error:",e));
+    }
     const prompt=`You are a small business advisor. Return ONLY a valid JSON object, no markdown:
 {"feasibility":{"score":<1-10>,"summary":"<2-3 sentences>"},"competition":{"level":"<Low|Medium|High>","summary":"<2-3 sentences about ${form.city}, ${form.state}>","competitors":["<type1>","<type2>","<type3>"],"gap":"<one sentence>"},"challenges":[{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"}],"checklist":[{"category":"Legal & registration","items":["<step>","<step>","<step>"]},{"category":"Financial setup","items":["<step>","<step>"]},{"category":"Operations","items":["<step>","<step>","<step>"]},{"category":"Marketing & launch","items":["<step>","<step>"]}],"costs":{"total_low":<number>,"total_high":<number>,"breakdown":[{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"}]}}
 Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${form.type} | ${form.location==="home"?"Home-based":"Physical location"}`;
     try {
-      const res=await fetch("/api/proxy",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:prompt}]})});
+      const res=await fetch("/api/proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:prompt}]})});
       const data=await res.json();
       const txt=data.content.find(b=>b.type==="text")?.text||"";
       const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
       setReport(parsed);
-      setChat([{role:"assistant",content:`Hi ${name}! Your Business Feasibility Report is ready. I've assessed your ${form.type} idea in ${form.city}, ${form.state} — covering feasibility, local competition, a state-specific checklist, and budget estimates. What would you like to explore first?`}]);
+      setChat([{role:"assistant",content:`Hi ${name}! Your Business Feasibility Report is ready. I've assessed your ${form.type} idea in ${form.city}, ${form.state}. What would you like to explore first?`}]);
       setPhase("report");
-    } catch{alert("Analysis failed. Please try again.");setPhase("form");}
+    } catch(e){alert("Analysis failed. Please try again.");setPhase("form");}
   }
 
   async function sendChat() {
@@ -236,7 +257,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     const next=[...chat,{role:"user",content:msg}];
     setChat(next);setChatLoad(true);
     try {
-      const res=await fetch("/api/proxy",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:400,system:`You are a friendly small business advisor. The user wants to start a ${form.type} in ${form.city}, ${form.state}. Idea: "${form.idea}". Give simple, encouraging advice in 2-4 sentences.`,messages:next.map(m=>({role:m.role,content:m.content}))})});
+      const res=await fetch("/api/proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:400,system:`You are a friendly small business advisor. The user wants to start a ${form.type} in ${form.city}, ${form.state}. Idea: "${form.idea}". Give simple, encouraging advice in 2-4 sentences.`,messages:next.map(m=>({role:m.role,content:m.content}))})});
       const data=await res.json();
       setChat([...next,{role:"assistant",content:data.content[0]?.text||"Try again!"}]);
     } catch{setChat([...next,{role:"assistant",content:"Sorry, couldn't respond. Try again!"}]);}
@@ -250,24 +271,20 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     <div style={{maxWidth:520,margin:"0 auto",padding:"2rem 1rem"}}>
       <BrandHeader/>
       <StepDots step={step}/>
-
       {step===0&&(
         <Card>
           <label style={{fontSize:13,fontWeight:500,display:"block",marginBottom:4}}>What's your business idea?</label>
           <span style={{fontSize:12,color:"var(--color-text-tertiary)",display:"block",marginBottom:8}}>Describe your idea in a sentence or two</span>
-          <textarea value={form.idea} onChange={e=>setForm(p=>({...p,idea:e.target.value}))} placeholder="e.g. A home-based bakery specialising in custom cakes and desserts for weddings and events..." rows={4} style={{width:"100%",resize:"vertical",fontSize:14,padding:"10px 12px",borderRadius:10,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",lineHeight:1.6}}/>
+          <textarea value={form.idea} onChange={e=>setForm(p=>({...p,idea:e.target.value}))} placeholder="e.g. A home-based bakery specialising in custom cakes..." rows={4} style={{width:"100%",resize:"vertical",fontSize:14,padding:"10px 12px",borderRadius:10,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",lineHeight:1.6}}/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
             <div style={{fontSize:12,color:form.idea.length>10?P.t400:"var(--color-text-tertiary)",display:"flex",alignItems:"center",gap:5}}>
               {form.idea.length>10&&<i className="ti ti-check" style={{fontSize:13}}/>}
               {form.idea.length>10?"Ready to continue":"At least 10 characters"}
             </div>
-            <PrimaryBtn onClick={()=>setStep(1)} disabled={!valid[0]}>
-              Continue <i className="ti ti-arrow-right" style={{fontSize:14}}/>
-            </PrimaryBtn>
+            <PrimaryBtn onClick={()=>setStep(1)} disabled={!valid[0]}>Continue <i className="ti ti-arrow-right" style={{fontSize:14}}/></PrimaryBtn>
           </div>
         </Card>
       )}
-
       {step===1&&(
         <Card>
           <label style={{fontSize:13,fontWeight:500,display:"block",marginBottom:4}}>Where are you located?</label>
@@ -301,15 +318,12 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
           </div>
         </Card>
       )}
-
       {step===2&&(
         <Card>
           <label style={{fontSize:13,fontWeight:500,display:"block",marginBottom:4}}>What type of business?</label>
           <span style={{fontSize:12,color:"var(--color-text-tertiary)",display:"block",marginBottom:12}}>Select the category that best fits your idea</span>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:"1.25rem",maxHeight:300,overflowY:"auto",paddingRight:4}}>
-            {BUSINESS_TYPES.map(t=>(
-              <Pill key={t} active={form.type===t} onClick={()=>setForm(p=>({...p,type:t}))}>{t}</Pill>
-            ))}
+            {BUSINESS_TYPES.map(t=><Pill key={t} active={form.type===t} onClick={()=>setForm(p=>({...p,type:t}))}>{t}</Pill>)}
           </div>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <GhostBtn onClick={()=>setStep(1)}><i className="ti ti-arrow-left" style={{fontSize:14}}/>Back</GhostBtn>
@@ -317,7 +331,6 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
           </div>
         </Card>
       )}
-
       {step===3&&(
         <Card>
           <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"1rem"}}>Review your details</div>
@@ -351,7 +364,6 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     const doneCount=Object.values(checked).filter(Boolean).length;
     const total=(report.checklist||[]).reduce((a,c)=>a+c.items.length,0);
     const score=report.feasibility?.score||0;
-
     return (
       <div style={{maxWidth:660,margin:"0 auto",padding:"1.5rem 1rem"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1.5rem",gap:12,flexWrap:"wrap"}}>
@@ -362,13 +374,10 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               <div style={{fontSize:12,color:"var(--color-text-tertiary)"}}>{form.type} · {form.city}, {form.state}{userInfo.name?` · ${userInfo.name}`:""}</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <button onClick={()=>{setPhase("form");setStep(0);setReport(null);setChecked({});}} style={{fontSize:13,padding:"8px 14px",borderRadius:10,background:"transparent",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-              <i className="ti ti-refresh" style={{fontSize:14}}/>New report
-            </button>
-          </div>
+          <button onClick={()=>{setPhase("form");setStep(0);setReport(null);setChecked({});}} style={{fontSize:13,padding:"8px 14px",borderRadius:10,background:"transparent",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+            <i className="ti ti-refresh" style={{fontSize:14}}/>New report
+          </button>
         </div>
-
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:"1.5rem"}}>
           {[
             {label:"Feasibility",value:`${score}/10`,color:score>=7?P.t600:score>=5?P.a400:P.r400,bg:score>=7?P.t50:score>=5?P.a50:P.r50,icon:"ti-star"},
@@ -387,7 +396,6 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
             </div>
           ))}
         </div>
-
         <div style={{display:"flex",gap:6,marginBottom:"1.25rem",flexWrap:"wrap"}}>
           {TABS.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:24,border:`1.5px solid ${tab===t.id?P.p600:"var(--color-border-tertiary)"}`,background:tab===t.id?P.p600:"transparent",color:tab===t.id?"#fff":"var(--color-text-secondary)",fontWeight:tab===t.id?500:400,fontSize:13,cursor:"pointer"}}>
@@ -395,14 +403,8 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
             </button>
           ))}
         </div>
-
         <Card style={{marginBottom:"1.25rem",minHeight:200}}>
-          {tab===0&&(
-            <div>
-              <SectionLabel>Feasibility rating</SectionLabel>
-              <ScoreRing score={score} summary={report.feasibility?.summary||""}/>
-            </div>
-          )}
+          {tab===0&&<div><SectionLabel>Feasibility rating</SectionLabel><ScoreRing score={score} summary={report.feasibility?.summary||""}/></div>}
           {tab===1&&(
             <div>
               <SectionLabel>Competition in {form.city}</SectionLabel>
@@ -412,9 +414,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               <p style={{fontSize:14,color:"var(--color-text-secondary)",lineHeight:1.75,margin:"0 0 1rem"}}>{report.competition?.summary||""}</p>
               <div style={{fontSize:12,fontWeight:500,color:"var(--color-text-secondary)",marginBottom:8}}>Likely competitors nearby</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:"1rem"}}>
-                {(report.competition?.competitors||[]).map((c,i)=>(
-                  <span key={i} style={{background:P.p50,color:P.p800,fontSize:12,fontWeight:500,padding:"4px 12px",borderRadius:20}}>{c}</span>
-                ))}
+                {(report.competition?.competitors||[]).map((c,i)=><span key={i} style={{background:P.p50,color:P.p800,fontSize:12,fontWeight:500,padding:"4px 12px",borderRadius:20}}>{c}</span>)}
               </div>
               <div style={{background:P.t50,borderRadius:10,padding:"12px 14px",display:"flex",gap:10,alignItems:"flex-start"}}>
                 <i className="ti ti-bulb" style={{fontSize:16,color:P.t600,marginTop:1,flexShrink:0}}/>
@@ -501,7 +501,6 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
             </div>
           )}
         </Card>
-
         <Card>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1rem"}}>
             <div style={{width:34,height:34,borderRadius:10,background:P.p50,display:"flex",alignItems:"center",justifyContent:"center"}}>
