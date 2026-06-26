@@ -8,12 +8,15 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const db = {
   async saveReport(userId, form, report) {
+    console.log("Saving report for user:", userId);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
       method: "POST",
       headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
       body: JSON.stringify({user_id:userId, idea:form.idea, city:form.city, state:form.state, type:form.type, report_data:report})
     });
-    return res.json();
+    const data = await res.json();
+    console.log("Save response:", data);
+    return data;
   },
   async getReports(userId) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?user_id=eq.${userId}&order=created_at.desc`, {
