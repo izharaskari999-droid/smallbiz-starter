@@ -204,6 +204,11 @@ export default function App() {
   const chatRef=useRef(null);
 
   useEffect(()=>{
+    const link=document.createElement("link");
+    link.rel="stylesheet";
+    link.href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+    document.body.style.fontFamily="'Inter', sans-serif";
     const s=document.createElement("script");
     s.src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
     s.onload=()=>window.emailjs&&window.emailjs.init(EMAILJS_PUBLIC_KEY);
