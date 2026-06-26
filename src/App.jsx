@@ -270,7 +270,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               <p style={{fontSize:16,color:"var(--color-text-secondary)",lineHeight:1.7,margin:0}}>Invenio gives you a comprehensive Business Feasibility Report in seconds — personalized to your idea, city, and state.</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {[["ti-star","Feasibility score","Rated 1-10 with detailed reasoning"],["ti-trophy","Competition analysis","Real competitors in your area with market gaps"],["ti-checklist","State-specific checklist","Every legal and operational step to launch"],["ti-currency-dollar","Cost estimate","Realistic budget from $0 to first sale"],["ti-message-circle","AI advisor","Ask anything about your business"]].map(([icon,title,desc])=>(
+              {[["ti-star","Feasibility score","Rated 1-10 with detailed reasoning"],["ti-trophy","Competition analysis","Real competitors in your area with market gaps"],["ti-checklist","State-specific checklist","Every legal and operational step to launch"],["ti-currency-dollar","Cost estimate","Realistic budget from $0 to first sale"]].map(([icon,title,desc])=>(
                 <div key={title} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
                   <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     <i className={`ti ${icon}`} style={{fontSize:17,color:G[600]}}/>
@@ -528,36 +528,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
                 </Card>
               </div>
 
-              <Card>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:"1rem"}}>
-                  <div style={{width:32,height:32,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <i className="ti ti-message-circle" style={{fontSize:16,color:G[600]}}/>
-                  </div>
-                  <div>
-                    <div style={{fontWeight:500,fontSize:14}}>AI advisor</div>
-                    <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>Ask anything about your business</div>
-                  </div>
-                </div>
-                <div ref={chatRef} style={{height:320,overflowY:"auto",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:8}}>
-                  {chat.map((m,i)=>(
-                    <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                      <div style={{maxWidth:"85%",padding:"9px 12px",borderRadius:10,background:m.role==="user"?G[600]:"var(--color-background-secondary)",color:m.role==="user"?"#fff":"var(--color-text-primary)",fontSize:13,lineHeight:1.6,borderBottomRightRadius:m.role==="user"?4:10,borderBottomLeftRadius:m.role==="assistant"?4:10}}>
-                        {m.content}
-                      </div>
-                    </div>
-                  ))}
-                  {chatLoad&&(
-                    <div style={{display:"flex",gap:4,padding:"9px 12px",width:"fit-content",background:"var(--color-background-secondary)",borderRadius:10}}>
-                      {[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:"var(--color-text-tertiary)",animation:`dot 0.9s ease ${i*0.18}s infinite`}}/>)}
-                    </div>
-                  )}
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
-                  <input value={chatIn} onChange={e=>setChatIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Ask a question..." style={{fontSize:13}}/>
-                  <button onClick={sendChat} disabled={!chatIn.trim()||chatLoad} style={{padding:"0 14px",borderRadius:8,background:chatIn.trim()&&!chatLoad?G[600]:"var(--color-background-secondary)",color:chatIn.trim()&&!chatLoad?"#fff":"var(--color-text-tertiary)",border:"none",fontWeight:500,fontSize:13,cursor:chatIn.trim()&&!chatLoad?"pointer":"not-allowed"}}>Send</button>
-                </div>
-                <style>{`@keyframes dot{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
-              </Card>
+
             </div>
           </div>
         </div>
