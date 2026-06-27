@@ -333,14 +333,11 @@ function Dashboard({user,onClose,onViewReport}) {
   }
 
   function handleView(r) {
-    const reportData = r.report_data 
+    const reportData = r.report_data
       ? (typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data)
       : null;
     if(!reportData){alert("Report data not found.");return;}
-    setForm({idea:r.idea,city:r.city,state:r.state,type:r.type,location:"home"});
-    setReport(reportData);
-    setShowDashboard(false);
-    setPhase("report");
+    onViewReport(r.idea, r.city, r.state, r.type, reportData);
   }
   return (
     <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",padding:"2rem"}}>
@@ -467,10 +464,8 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
   if(showDashboard) return (
     <>
       <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-      <Dashboard user={user} onClose={()=>setShowDashboard(false)} onViewReport={r=>{
-        const reportData=r.report_data?(typeof r.report_data==="string"?JSON.parse(r.report_data):r.report_data):null;
-        if(!reportData){alert("Report data not found.");return;}
-        setForm({idea:r.idea,city:r.city,state:r.state,type:r.type,location:"home"});
+      <Dashboard user={user} onClose={()=>setShowDashboard(false)} onViewReport={(idea,city,state,type,reportData)=>{
+        setForm({idea,city,state,type,location:"home"});
         setReport(reportData);
         setShowDashboard(false);
         setPhase("report");
