@@ -8,14 +8,13 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const db = {
   async saveReport(userId, form, report) {
-    console.log("Saving report for user:", userId);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
       method: "POST",
       headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
-      body: JSON.stringify({user_id:userId, idea:form.idea, city:form.city, state:form.state, type:form.type, report_data:report})
+      body: JSON.stringify({user_id:userId,idea:form.idea,city:form.city,state:form.state,type:form.type,report_data:report})
     });
     const data = await res.json();
-    console.log("Save response:", data);
+    console.log("Save report response:", data);
     return data;
   },
   async getReports(userId) {
@@ -28,7 +27,7 @@ const db = {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
       method: "POST",
       headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
-      body: JSON.stringify({name, email, password_hash:passwordHash})
+      body: JSON.stringify({name,email,password_hash:passwordHash})
     });
     return res.json();
   },
@@ -42,10 +41,9 @@ const db = {
 };
 
 async function hashPassword(password) {
-  const msgBuffer = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  const buf = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
 const BUSINESS_TYPES = [
@@ -166,7 +164,39 @@ function Loader() {
   );
 }
 
-function AuthModal({onLogin,onGuest,onClose}) {
+function Navbar({user,onLogout,onShowAuth,onShowDashboard,onHome}) {
+  return (
+    <div style={{borderBottom:"0.5px solid var(--color-border-tertiary)",padding:"0 2rem",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--color-background-primary)",position:"sticky",top:0,zIndex:10}}>
+      <div onClick={onHome} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+        <Logo size={32}/>
+        <span style={{fontSize:16,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"0.05em"}}>INVENIO</span>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        {user ? (
+          <>
+            <button onClick={onShowDashboard} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:G[50],color:G[800],border:`0.5px solid ${G[100]}`,cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
+              <i className="ti ti-layout-dashboard" style={{fontSize:13}}/>My reports
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:30,height:30,borderRadius:"50%",background:G[600],display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:500}}>
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+              <span style={{fontSize:13,color:"var(--color-text-secondary)"}}>{user.name}</span>
+              <button onClick={onLogout} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <button onClick={onShowAuth} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:"transparent",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>Log in</button>
+            <PrimaryBtn onClick={onShowAuth} style={{padding:"7px 16px",fontSize:13}}>Sign up</PrimaryBtn>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AuthModal({onLogin,onGuest}) {
   const [mode,setMode]=useState("choose");
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
@@ -213,10 +243,10 @@ function AuthModal({onLogin,onGuest,onClose}) {
               <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>Create an account to save your reports or continue as guest</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <PrimaryBtn onClick={()=>setMode("signup")} style={{justifyContent:"center",width:"100%"}}>
+              <PrimaryBtn onClick={()=>setMode("signup")} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
                 <i className="ti ti-user-plus" style={{fontSize:15}}/>Create account
               </PrimaryBtn>
-              <GhostBtn onClick={()=>setMode("login")} style={{justifyContent:"center",width:"100%"}}>
+              <GhostBtn onClick={()=>setMode("login")} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
                 <i className="ti ti-login" style={{fontSize:15}}/>Log in
               </GhostBtn>
               <button onClick={onGuest} style={{padding:"10px",borderRadius:8,background:"transparent",color:"var(--color-text-tertiary)",border:"none",fontSize:13,cursor:"pointer"}}>
@@ -246,7 +276,7 @@ function AuthModal({onLogin,onGuest,onClose}) {
               </div>
               {err&&<div style={{fontSize:12,color:G.r400}}><i className="ti ti-alert-circle" style={{fontSize:13,verticalAlign:-1}}/> {err}</div>}
             </div>
-            <PrimaryBtn onClick={handleSignup} disabled={loading} style={{width:"100%",justifyContent:"center"}}>
+            <PrimaryBtn onClick={handleSignup} disabled={loading} style={{width:"100%",justifyContent:"center",boxSizing:"border-box"}}>
               {loading?"Creating account...":"Create account"}
             </PrimaryBtn>
             <p style={{textAlign:"center",fontSize:12,color:"var(--color-text-tertiary)",marginTop:12}}>Already have an account? <button onClick={()=>setMode("login")} style={{background:"none",border:"none",color:G[600],cursor:"pointer",fontSize:12,fontWeight:500}}>Log in</button></p>
@@ -269,7 +299,7 @@ function AuthModal({onLogin,onGuest,onClose}) {
               </div>
               {err&&<div style={{fontSize:12,color:G.r400}}><i className="ti ti-alert-circle" style={{fontSize:13,verticalAlign:-1}}/> {err}</div>}
             </div>
-            <PrimaryBtn onClick={handleLogin} disabled={loading} style={{width:"100%",justifyContent:"center"}}>
+            <PrimaryBtn onClick={handleLogin} disabled={loading} style={{width:"100%",justifyContent:"center",boxSizing:"border-box"}}>
               {loading?"Logging in...":"Log in"}
             </PrimaryBtn>
             <p style={{textAlign:"center",fontSize:12,color:"var(--color-text-tertiary)",marginTop:12}}>No account? <button onClick={()=>setMode("signup")} style={{background:"none",border:"none",color:G[600],cursor:"pointer",fontSize:12,fontWeight:500}}>Sign up</button></p>
@@ -280,49 +310,12 @@ function AuthModal({onLogin,onGuest,onClose}) {
   );
 }
 
-function Navbar({user,onLogout,onShowAuth,onShowDashboard}) {
-  return (
-    <div style={{borderBottom:"0.5px solid var(--color-border-tertiary)",padding:"0 2rem",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--color-background-primary)",position:"sticky",top:0,zIndex:10}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <Logo size={32}/>
-        <span style={{fontSize:16,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"0.05em"}}>INVENIO</span>
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        {user?(
-          <>
-            <button onClick={onShowDashboard} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:G[50],color:G[800],border:`0.5px solid ${G[100]}`,cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
-              <i className="ti ti-layout-dashboard" style={{fontSize:13}}/>My reports
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:30,height:30,borderRadius:"50%",background:G[600],display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:500}}>
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-              <span style={{fontSize:13,color:"var(--color-text-secondary)"}}>{user.name}</span>
-              <button onClick={onLogout} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
-            </div>
-          </>
-        ):(
-          <>
-            <button onClick={onShowAuth} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:"transparent",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>Log in</button>
-            <PrimaryBtn onClick={onShowAuth} style={{padding:"7px 16px",fontSize:13}}>Sign up</PrimaryBtn>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Dashboard({user,onClose,onViewReport}) {
   const [reports,setReports]=useState([]);
   const [loading,setLoading]=useState(true);
-
   useEffect(()=>{
-    db.getReports(user.id).then(data=>{
-      setReports(Array.isArray(data)?data:[]);
-      setLoading(false);
-    });
+    db.getReports(user.id).then(data=>{setReports(Array.isArray(data)?data:[]);setLoading(false);});
   },[]);
-
   return (
     <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",padding:"2rem"}}>
       <div style={{maxWidth:900,margin:"0 auto"}}>
@@ -345,7 +338,7 @@ function Dashboard({user,onClose,onViewReport}) {
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
             {reports.map((r,i)=>(
-              <Card key={i} style={{cursor:"pointer",transition:"border-color 0.15s"}} onClick={()=>onViewReport(r)}>
+              <Card key={i} style={{cursor:"pointer"}} onClick={()=>onViewReport(r)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <i className="ti ti-file-text" style={{fontSize:18,color:G[600]}}/>
@@ -388,8 +381,13 @@ export default function App() {
     document.head.appendChild(link);
     document.body.style.fontFamily="'Inter', sans-serif";
     const saved=localStorage.getItem("invenio_user");
-    if(saved)setUser(JSON.parse(saved));
+    if(saved) try{setUser(JSON.parse(saved));}catch{}
   },[]);
+
+  function goHome() {
+    setPhase("form");setStep(0);setReport(null);setChecked({});
+    setShowDashboard(false);setShowGuestGate(false);setShowAuth(false);
+  }
 
   function handleLogin(u) {
     setUser(u);
@@ -400,6 +398,7 @@ export default function App() {
   function handleLogout() {
     setUser(null);
     localStorage.removeItem("invenio_user");
+    goHome();
   }
 
   const valid=[form.idea.trim().length>10,form.state&&form.city.trim(),form.type,true];
@@ -419,9 +418,12 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
       const txt=data.content.find(b=>b.type==="text")?.text||"";
       const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
       setReport(parsed);
-      if(user){await db.saveReport(user.id,form,parsed);}
+      if(user){
+        const saved=await db.saveReport(user.id,form,parsed);
+        console.log("Saved:",saved);
+      }
       setPhase("report");
-    } catch{alert("Analysis failed. Please try again.");setPhase("form");}
+    } catch(e){console.error(e);alert("Analysis failed. Please try again.");setPhase("form");}
   }
 
   function handleGenerate() {
@@ -429,21 +431,26 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     else{setShowGuestGate(true);}
   }
 
-  if(showAuth) return <AuthModal onLogin={handleLogin} onGuest={()=>{setShowAuth(false);setShowGuestGate(true);}} onClose={()=>setShowAuth(false)}/>;
+  if(showAuth) return <AuthModal onLogin={handleLogin} onGuest={()=>{setShowAuth(false);setShowGuestGate(true);}}/>;
 
   if(showDashboard) return (
     <>
-      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)}/>
+      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
       <Dashboard user={user} onClose={()=>setShowDashboard(false)} onViewReport={r=>{setForm({idea:r.idea,city:r.city,state:r.state,type:r.type,location:"home"});setReport(r.report_data);setShowDashboard(false);setPhase("report");}}/>
     </>
   );
 
-  if(phase==="loading") return <><Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)}/><Loader/></>;
+  if(phase==="loading") return (
+    <>
+      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
+      <Loader/>
+    </>
+  );
 
   if(showGuestGate) return (
     <>
-      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)}/>
-      <div style={{minHeight:"calc(100vh-60px)",background:"var(--color-background-secondary)",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
+      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
+      <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
         <Card style={{maxWidth:460,width:"100%",padding:"2rem"}}>
           <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
             <div style={{width:52,height:52,borderRadius:16,background:G[50],display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
@@ -452,11 +459,9 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
             <div style={{fontSize:18,fontWeight:500,marginBottom:6}}>Almost ready</div>
             <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>Create a free account to save your reports, or continue as guest</div>
           </div>
-          <div style={{display:"flex",gap:10,marginBottom:14}}>
-            <PrimaryBtn onClick={()=>{setShowGuestGate(false);setShowAuth(true);}} style={{flex:1,justifyContent:"center",fontSize:13}}>
-              <i className="ti ti-user-plus" style={{fontSize:14}}/>Create account
-            </PrimaryBtn>
-          </div>
+          <PrimaryBtn onClick={()=>{setShowGuestGate(false);setShowAuth(true);}} style={{width:"100%",justifyContent:"center",boxSizing:"border-box",marginBottom:14}}>
+            <i className="ti ti-user-plus" style={{fontSize:14}}/>Create account
+          </PrimaryBtn>
           <div style={{borderTop:"0.5px solid var(--color-border-tertiary)",paddingTop:14}}>
             <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:10,textAlign:"center"}}>Or continue as guest</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -480,14 +485,14 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
 
   if(phase==="form") return (
     <>
-      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)}/>
+      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
       <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"3rem 2rem",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3rem",alignItems:"start"}}>
           <div>
             <div style={{display:"inline-flex",alignItems:"center",gap:6,background:G[50],color:G[800],fontSize:12,fontWeight:500,padding:"4px 12px",borderRadius:20,marginBottom:16}}>
               <i className="ti ti-sparkles" style={{fontSize:13}}/>AI-powered analysis
             </div>
-            <h1 style={{fontSize:36,fontWeight:500,lineHeight:1.2,margin:"0 0 16px",color:"var(--color-text-primary)"}}>Turn your business idea into a plan</h1>
+            <h1 style={{fontSize:36,fontWeight:500,lineHeight:1.2,margin:"0 0 16px"}}>Turn your business idea into a plan</h1>
             <p style={{fontSize:16,color:"var(--color-text-secondary)",lineHeight:1.7,margin:"0 0 2rem"}}>Invenio gives you a comprehensive Business Feasibility Report in seconds — personalized to your idea, city, and state.</p>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {[["ti-star","Feasibility score","Rated 1-10 with detailed reasoning"],["ti-trophy","Competition analysis","Real competitors in your area with market gaps"],["ti-checklist","State-specific checklist","Every legal and operational step to launch"],["ti-currency-dollar","Cost estimate","Realistic budget from $0 to first sale"]].map(([icon,title,desc])=>(
@@ -577,7 +582,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
                       </div>
                       <div>
                         <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:1}}>{label}</div>
-                        <div style={{fontSize:13,color:"var(--color-text-primary)",lineHeight:1.4}}>{val}</div>
+                        <div style={{fontSize:13,lineHeight:1.4}}>{val}</div>
                       </div>
                     </div>
                   ))}
@@ -604,7 +609,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     const score=report.feasibility?.score||0;
     return (
       <>
-        <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)}/>
+        <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
         <div style={{background:"var(--color-background-secondary)",minHeight:"calc(100vh - 60px)"}}>
           <div style={{maxWidth:1100,margin:"0 auto",padding:"2rem"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.5rem",flexWrap:"wrap",gap:12}}>
@@ -614,7 +619,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               </div>
               <div style={{display:"flex",gap:8}}>
                 {user&&<div style={{fontSize:12,background:G[50],color:G[800],padding:"5px 12px",borderRadius:20,display:"flex",alignItems:"center",gap:5,fontWeight:500}}><i className="ti ti-check" style={{fontSize:12}}/>Report saved</div>}
-                <button onClick={()=>{setPhase("form");setStep(0);setReport(null);setChecked({});}} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                <button onClick={goHome} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                   <i className="ti ti-refresh" style={{fontSize:14}}/>New report
                 </button>
               </div>
@@ -717,7 +722,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
                     </div>
                     <div style={{background:"var(--color-background-secondary)",borderRadius:10,padding:"14px",textAlign:"center"}}>
                       <div style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Comfortable</div>
-                      <div style={{fontSize:24,fontWeight:500,color:"var(--color-text-primary)"}}>${(report.costs?.total_high||0).toLocaleString()}</div>
+                      <div style={{fontSize:24,fontWeight:500}}>${(report.costs?.total_high||0).toLocaleString()}</div>
                     </div>
                   </div>
                   <div style={{borderRadius:8,overflow:"hidden",border:"0.5px solid var(--color-border-tertiary)"}}>
