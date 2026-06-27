@@ -333,9 +333,12 @@ function Dashboard({user,onClose,onViewReport}) {
   }
 
   function handleView(r) {
+    console.log("Report clicked:", r);
+    console.log("Report data:", r.report_data);
     const reportData = r.report_data
       ? (typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data)
       : null;
+    console.log("Parsed report data:", reportData);
     if(!reportData){alert("Report data not found.");return;}
     onViewReport(r.idea, r.city, r.state, r.type, reportData);
   }
