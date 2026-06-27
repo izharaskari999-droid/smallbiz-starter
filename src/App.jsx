@@ -17,6 +17,13 @@ const db = {
     console.log("Save report response:", data);
     return data;
   },
+  async deleteReport(reportId) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`, {
+      method: "DELETE",
+      headers: {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+    });
+    return res.ok;
+  },
   async getReports(userId) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?user_id=eq.${userId}&order=created_at.desc`, {
       headers: {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
@@ -313,9 +320,22 @@ function AuthModal({onLogin,onGuest}) {
 function Dashboard({user,onClose,onViewReport}) {
   const [reports,setReports]=useState([]);
   const [loading,setLoading]=useState(true);
+
   useEffect(()=>{
     db.getReports(user.id).then(data=>{setReports(Array.isArray(data)?data:[]);setLoading(false);});
   },[]);
+
+  async function handleDelete(e, reportId) {
+    e.stopPropagation();
+    if(!window.confirm("Delete this report?")) return;
+    await db.deleteReport(reportId);
+    setReports(prev=>prev.filter(r=>r.id!==reportId));
+  }
+
+  function handleView(r) {
+    const reportData = typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data;
+    onViewReport({...r, report_data: reportData});
+  }
   return (
     <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",padding:"2rem"}}>
       <div style={{maxWidth:900,margin:"0 auto"}}>
@@ -338,12 +358,17 @@ function Dashboard({user,onClose,onViewReport}) {
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
             {reports.map((r,i)=>(
-              <Card key={i} style={{cursor:"pointer"}} onClick={()=>onViewReport(r)}>
+              <Card key={i} style={{cursor:"pointer",position:"relative"}} onClick={()=>handleView(r)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <i className="ti ti-file-text" style={{fontSize:18,color:G[600]}}/>
                   </div>
-                  <span style={{fontSize:11,background:G[50],color:G[800],padding:"2px 8px",borderRadius:20,fontWeight:500}}>{r.report_data?.feasibility?.score||"?"}/10</span>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:11,background:G[50],color:G[800],padding:"2px 8px",borderRadius:20,fontWeight:500}}>{r.report_data?.feasibility?.score||"?"}/10</span>
+                    <button onClick={e=>handleDelete(e,r.id)} style={{width:26,height:26,borderRadius:6,background:G.r50,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <i className="ti ti-trash" style={{fontSize:13,color:G.r400}}/>
+                    </button>
+                  </div>
                 </div>
                 <div style={{fontSize:14,fontWeight:500,marginBottom:4,lineHeight:1.3}}>{r.idea?.length>60?r.idea.slice(0,60)+"...":r.idea}</div>
                 <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:8}}>{r.type} · {r.city}, {r.state}</div>
