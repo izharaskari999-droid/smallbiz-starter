@@ -392,14 +392,16 @@ function Dashboard({user,onClose,onViewReport}) {
           </Card>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
-            {reports.map((r,i)=>(
-              <Card key={i} style={{cursor:"pointer",position:"relative"}} onClick={()=>handleView(r)}>
+            {reports.map((r,i)=>{
+              const rd = r.report_data ? (typeof r.report_data==="string" ? JSON.parse(r.report_data) : r.report_data) : null;
+              return (
+              <Card key={i} style={{cursor:"pointer"}} onClick={()=>handleView(r)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <i className="ti ti-file-text" style={{fontSize:18,color:G[600]}}/>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:11,background:G[50],color:G[800],padding:"2px 8px",borderRadius:20,fontWeight:500}}>{r.report_data?.feasibility?.score||"?"}/10</span>
+                    <span style={{fontSize:11,background:G[50],color:G[800],padding:"2px 8px",borderRadius:20,fontWeight:500}}>{rd?.feasibility?.score||"?"}/10</span>
                     <button onClick={e=>handleDelete(e,r.id)} style={{width:26,height:26,borderRadius:6,background:G.r50,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
                       <i className="ti ti-trash" style={{fontSize:13,color:G.r400}}/>
                     </button>
@@ -409,7 +411,8 @@ function Dashboard({user,onClose,onViewReport}) {
                 <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:8}}>{r.type} · {r.city}, {r.state}</div>
                 <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{new Date(r.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
