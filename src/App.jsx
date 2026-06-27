@@ -11,7 +11,14 @@ const db = {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
       method: "POST",
       headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
-      body: JSON.stringify({user_id:userId,idea:form.idea,city:form.city,state:form.state,type:form.type,report_data:report})
+      body: JSON.stringify({
+        user_id: userId,
+        idea: form.idea,
+        city: form.city,
+        state: form.state,
+        type: form.type,
+        report_data: JSON.stringify(report)
+      })
     });
     const data = await res.json();
     console.log("Save report response:", data);
@@ -333,14 +340,16 @@ function Dashboard({user,onClose,onViewReport}) {
   }
 
   function handleView(r) {
-    console.log("Report clicked:", r);
-    console.log("Report data:", r.report_data);
-    const reportData = r.report_data
-      ? (typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data)
-      : null;
-    console.log("Parsed report data:", reportData);
-    if(!reportData){alert("Report data not found.");return;}
-    onViewReport(r.idea, r.city, r.state, r.type, reportData);
+    try {
+      const reportData = r.report_data
+        ? (typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data)
+        : null;
+      if(!reportData){alert("Report data not found.");return;}
+      onViewReport(r.idea, r.city, r.state, r.type, reportData);
+    } catch(e) {
+      console.error("Failed to parse report:", e);
+      alert("Could not load this report. Please generate a new one.");
+    }
   }
   return (
     <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",padding:"2rem"}}>
