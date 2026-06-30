@@ -6,57 +6,57 @@ const EMAILJS_PUBLIC_KEY = "j3czFp8ResoC6DiuK";
 const SUPABASE_URL = "https://sojwfzoitieeypnkgakh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvandmem9pdGllZXlwbmtnYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0OTY4MTgsImV4cCI6MjA5ODA3MjgxOH0.8FwNq9ygMwPqQot5Ekgk2YJcfBfSxg38nNBJKYq4DYI";
 
+const C = {
+  bg:"#0a0a0a", card:"#111111", border:"#1e1e1e", border2:"#2a2a2a",
+  green:"#22c55e", green2:"#16a34a", greendim:"#052e16",
+  greenbg:"rgba(34,197,94,0.1)", greenbg2:"rgba(34,197,94,0.05)",
+  text:"#ffffff", text2:"#a1a1aa", text3:"#71717a",
+  red:"#ef4444", redbg:"rgba(239,68,68,0.1)",
+  amber:"#f59e0b", amberbg:"rgba(245,158,11,0.1)",
+};
+
 const db = {
   async saveReport(userId, form, report) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
-      body: JSON.stringify({
-        user_id: userId,
-        idea: form.idea,
-        city: form.city,
-        state: form.state,
-        type: form.type,
-        report_data: JSON.stringify(report)
-      })
-    });
-    const data = await res.json();
-    console.log("Save report response:", data);
-    return data;
-  },
-  async deleteReport(reportId) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`, {
-      method: "DELETE",
-      headers: {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
-    });
-    return res.ok;
-  },
-  async getReports(userId) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?user_id=eq.${userId}&order=created_at.desc`, {
-      headers: {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
+      body:JSON.stringify({user_id:userId,idea:form.idea,city:form.city,state:form.state,type:form.type,report_data:JSON.stringify(report)})
     });
     return res.json();
   },
-  async createUser(name, email, passwordHash) {
+  async getReports(userId) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?user_id=eq.${userId}&order=created_at.desc`, {
+      headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+    });
+    return res.json();
+  },
+  async deleteReport(id) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${id}`, {
+      method:"DELETE",
+      headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+    });
+    return res.ok;
+  },
+  async createUser(name,email,hash) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
-      body: JSON.stringify({name,email,password_hash:passwordHash})
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=representation"},
+      body:JSON.stringify({name,email,password_hash:hash})
     });
     return res.json();
   },
   async getUser(email) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&limit=1`, {
-      headers: {"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
+      headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`}
     });
-    const data = await res.json();
-    return data[0] || null;
+    const d = await res.json();
+    return d[0]||null;
   }
 };
 
-async function hashPassword(password) {
-  const buf = new TextEncoder().encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", buf);
+async function hashPassword(p) {
+  const buf=new TextEncoder().encode(p);
+  const hash=await crypto.subtle.digest("SHA-256",buf);
   return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
@@ -75,23 +75,11 @@ const US_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorad
 
 const TABS = [{id:0,label:"Feasibility",icon:"ti-star"},{id:1,label:"Competition",icon:"ti-trophy"},{id:2,label:"Challenges",icon:"ti-alert-triangle"},{id:3,label:"Checklist",icon:"ti-checklist"},{id:4,label:"Budget",icon:"ti-currency-dollar"}];
 
-const G = {
-  50:"#EAF3DE",100:"#C0DD97",200:"#97C459",400:"#639922",600:"#3B6D11",800:"#27500A",
-  a50:"#FAEEDA",a400:"#BA7517",a800:"#633806",
-  r50:"#FCEBEB",r400:"#E24B4A",r800:"#791F1F",
-};
-
-const compMeta = {
-  Low:{color:G[600],bg:G[50],text:G[800]},
-  Medium:{color:G.a400,bg:G.a50,text:G.a800},
-  High:{color:G.r400,bg:G.r50,text:G.r800}
-};
-
-function Logo({size=44}) {
+function Logo({size=32}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{flexShrink:0,borderRadius:14}}>
-      <circle cx="50" cy="50" r="50" fill={G[600]}/>
-      <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{flexShrink:0,borderRadius:10}}>
+      <circle cx="50" cy="50" r="50" fill={C.green2}/>
+      <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3"/>
       <line x1="50" y1="12" x2="50" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
       <line x1="50" y1="80" x2="50" y2="88" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
       <line x1="12" y1="50" x2="20" y2="50" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
@@ -105,13 +93,50 @@ function Logo({size=44}) {
   );
 }
 
-function Card({children,style={}}) {
-  return <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"1.5rem",...style}}>{children}</div>;
+function Navbar({user,onLogout,onShowAuth,onShowDashboard,onHome}) {
+  return (
+    <div style={{borderBottom:`1px solid ${C.border}`,padding:"0 2rem",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",background:C.bg,position:"sticky",top:0,zIndex:10}}>
+      <div onClick={onHome} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+        <Logo size={32}/>
+        <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:"0.02em"}}>INVENIO</span>
+        <span style={{fontSize:11,color:C.green,background:C.greenbg,padding:"2px 8px",borderRadius:20,fontWeight:500,border:`1px solid ${C.green2}`}}>Business AI</span>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        {user ? (
+          <>
+            <button onClick={onShowDashboard} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:C.greenbg,color:C.green,border:`1px solid ${C.green2}`,cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
+              <i className="ti ti-layout-dashboard" style={{fontSize:13}}/>My reports
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:30,height:30,borderRadius:"50%",background:C.green2,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:600}}>
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+              <span style={{fontSize:13,color:C.text2}}>{user.name}</span>
+              <button onClick={onLogout} style={{fontSize:12,color:C.text3,background:"none",border:"none",cursor:"pointer"}}>Logout</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <button onClick={onShowAuth} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:"transparent",border:`1px solid ${C.border2}`,color:C.text2,cursor:"pointer"}}>Log in</button>
+            <button onClick={onShowAuth} style={{fontSize:13,padding:"7px 16px",borderRadius:8,background:C.green,color:"#000",border:"none",fontWeight:600,cursor:"pointer"}}>Sign up</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
-function PrimaryBtn({onClick,disabled,children,style={}}) {
+function DarkCard({children,style={},onClick}) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{padding:"10px 24px",borderRadius:8,background:disabled?"var(--color-background-secondary)":G[600],color:disabled?"var(--color-text-tertiary)":"#fff",border:"none",fontWeight:500,fontSize:14,cursor:disabled?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:7,...style}}>
+    <div onClick={onClick} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"1.5rem",...style}}>
+      {children}
+    </div>
+  );
+}
+
+function GreenBtn({onClick,disabled,children,style={}}) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{padding:"12px 24px",borderRadius:10,background:disabled?"#1a1a1a":C.green,color:disabled?C.text3:"#000",border:"none",fontWeight:700,fontSize:15,cursor:disabled?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:8,transition:"all 0.15s",...style}}>
       {children}
     </button>
   );
@@ -119,43 +144,9 @@ function PrimaryBtn({onClick,disabled,children,style={}}) {
 
 function GhostBtn({onClick,children,style={}}) {
   return (
-    <button onClick={onClick} style={{padding:"10px 18px",borderRadius:8,background:"transparent",color:"var(--color-text-secondary)",border:"0.5px solid var(--color-border-secondary)",fontWeight:400,fontSize:14,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,...style}}>
+    <button onClick={onClick} style={{padding:"10px 18px",borderRadius:10,background:"transparent",color:C.text2,border:`1px solid ${C.border2}`,fontWeight:400,fontSize:14,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,...style}}>
       {children}
     </button>
-  );
-}
-
-function StepDots({step,total=4}) {
-  return (
-    <div style={{display:"flex",gap:6,marginBottom:"1.5rem"}}>
-      {Array.from({length:total}).map((_,i)=>(
-        <div key={i} style={{height:4,borderRadius:4,flex:i===step?2:1,background:i<=step?G[600]:"var(--color-border-tertiary)",transition:"all 0.3s"}}/>
-      ))}
-    </div>
-  );
-}
-
-function SectionLabel({children}) {
-  return <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:12}}>{children}</div>;
-}
-
-function ScoreRing({score,summary}) {
-  const r=40,cx=50,cy=50,circ=2*Math.PI*r;
-  const col=score>=7?G[400]:score>=5?G.a400:G.r400;
-  const label=score>=7?"Strong":score>=5?"Moderate":"Challenging";
-  return (
-    <div style={{display:"flex",gap:"2rem",alignItems:"center"}}>
-      <svg width={100} height={100} style={{flexShrink:0}}>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-border-tertiary)" strokeWidth={7}/>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={col} strokeWidth={7} strokeDasharray={circ} strokeDashoffset={circ*(1-score/10)} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}/>
-        <text x={cx} y={cy-4} textAnchor="middle" style={{fontSize:22,fontWeight:500,fill:col}}>{score}</text>
-        <text x={cx} y={cy+12} textAnchor="middle" style={{fontSize:10,fill:"var(--color-text-tertiary)"}}>/ 10</text>
-      </svg>
-      <div>
-        <div style={{display:"inline-block",background:score>=7?G[50]:score>=5?G.a50:G.r50,color:score>=7?G[800]:score>=5?G.a800:G.r800,fontSize:12,fontWeight:500,padding:"3px 10px",borderRadius:20,marginBottom:8}}>{label}</div>
-        <p style={{fontSize:14,color:"var(--color-text-secondary)",lineHeight:1.7,margin:0}}>{summary}</p>
-      </div>
-    </div>
   );
 }
 
@@ -164,48 +155,19 @@ function Loader() {
   const [idx,setIdx]=useState(0);
   useEffect(()=>{const t=setInterval(()=>setIdx(i=>(i+1)%msgs.length),2000);return()=>clearInterval(t);},[]);
   return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"5rem 2rem",gap:"2rem"}}>
-      <div style={{position:"relative",width:64,height:64}}>
-        <div style={{width:64,height:64,border:`3px solid ${G[50]}`,borderTop:`3px solid ${G[600]}`,borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}><Logo size={36}/></div>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6rem 2rem",gap:"2rem",background:C.bg,minHeight:"calc(100vh - 60px)"}}>
+      <div style={{position:"relative",width:80,height:80}}>
+        <div style={{width:80,height:80,border:`3px solid ${C.border2}`,borderTop:`3px solid ${C.green}`,borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}><Logo size={40}/></div>
       </div>
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:17,fontWeight:500,marginBottom:6}}>Generating your report</div>
-        <div style={{fontSize:13,color:"var(--color-text-tertiary)",minHeight:20}}>{msgs[idx]}</div>
+        <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:C.text}}>Generating your report</div>
+        <div style={{fontSize:14,color:C.text3,minHeight:20}}>{msgs[idx]}</div>
+      </div>
+      <div style={{display:"flex",gap:6}}>
+        {msgs.map((_,i)=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:i===idx?C.green:C.border2,transition:"background 0.3s"}}/>)}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
-}
-
-function Navbar({user,onLogout,onShowAuth,onShowDashboard,onHome}) {
-  return (
-    <div style={{borderBottom:"0.5px solid var(--color-border-tertiary)",padding:"0 2rem",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--color-background-primary)",position:"sticky",top:0,zIndex:10}}>
-      <div onClick={onHome} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-        <Logo size={32}/>
-        <span style={{fontSize:16,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"0.05em"}}>INVENIO</span>
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        {user ? (
-          <>
-            <button onClick={onShowDashboard} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:G[50],color:G[800],border:`0.5px solid ${G[100]}`,cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
-              <i className="ti ti-layout-dashboard" style={{fontSize:13}}/>My reports
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:30,height:30,borderRadius:"50%",background:G[600],display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:500}}>
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-              <span style={{fontSize:13,color:"var(--color-text-secondary)"}}>{user.name}</span>
-              <button onClick={onLogout} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <button onClick={onShowAuth} style={{fontSize:13,padding:"6px 14px",borderRadius:8,background:"transparent",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>Log in</button>
-            <PrimaryBtn onClick={onShowAuth} style={{padding:"7px 16px",fontSize:13}}>Sign up</PrimaryBtn>
-          </>
-        )}
-      </div>
     </div>
   );
 }
@@ -217,6 +179,7 @@ function AuthModal({onLogin,onGuest}) {
   const [password,setPassword]=useState("");
   const [err,setErr]=useState("");
   const [loading,setLoading]=useState(false);
+  const inp = {width:"100%",boxSizing:"border-box",fontSize:14,background:"#1a1a1a",border:`1px solid ${C.border2}`,color:C.text,borderRadius:8,padding:"10px 12px",outline:"none"};
 
   async function handleSignup() {
     if(!name.trim()||!email.trim()||!password.trim()){setErr("All fields required.");return;}
@@ -224,12 +187,12 @@ function AuthModal({onLogin,onGuest}) {
     setLoading(true);setErr("");
     try {
       const existing=await db.getUser(email);
-      if(existing){setErr("Email already registered. Please log in.");setLoading(false);return;}
+      if(existing){setErr("Email already registered.");setLoading(false);return;}
       const hash=await hashPassword(password);
       const users=await db.createUser(name,email,hash);
-      if(users&&users[0]){onLogin({id:users[0].id,name,email});}
-      else{setErr("Signup failed. Please try again.");}
-    } catch{setErr("Something went wrong. Try again.");}
+      if(users&&users[0])onLogin({id:users[0].id,name,email});
+      else setErr("Signup failed. Try again.");
+    } catch{setErr("Something went wrong.");}
     setLoading(false);
   }
 
@@ -238,88 +201,72 @@ function AuthModal({onLogin,onGuest}) {
     setLoading(true);setErr("");
     try {
       const user=await db.getUser(email);
-      if(!user){setErr("No account found. Please sign up.");setLoading(false);return;}
+      if(!user){setErr("No account found.");setLoading(false);return;}
       const hash=await hashPassword(password);
       if(hash!==user.password_hash){setErr("Incorrect password.");setLoading(false);return;}
       onLogin({id:user.id,name:user.name,email:user.email});
-    } catch{setErr("Something went wrong. Try again.");}
+    } catch{setErr("Something went wrong.");}
     setLoading(false);
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
-      <Card style={{maxWidth:420,width:"100%",padding:"2rem"}}>
+    <div style={{minHeight:"100vh",background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <DarkCard style={{maxWidth:420,width:"100%",padding:"2rem"}}>
         {mode==="choose"&&(
           <div>
-            <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
-              <Logo size={48}/>
-              <div style={{fontSize:20,fontWeight:700,marginTop:12,marginBottom:4}}>Welcome to INVENIO</div>
-              <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>Create an account to save your reports or continue as guest</div>
+            <div style={{textAlign:"center",marginBottom:"2rem"}}>
+              <Logo size={52}/>
+              <div style={{fontSize:22,fontWeight:700,marginTop:14,marginBottom:6,color:C.text}}>Welcome to INVENIO</div>
+              <div style={{fontSize:14,color:C.text2}}>Create an account to save your reports</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <PrimaryBtn onClick={()=>setMode("signup")} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
-                <i className="ti ti-user-plus" style={{fontSize:15}}/>Create account
-              </PrimaryBtn>
+              <GreenBtn onClick={()=>setMode("signup")} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
+                <i className="ti ti-user-plus"/>Create free account
+              </GreenBtn>
               <GhostBtn onClick={()=>setMode("login")} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
-                <i className="ti ti-login" style={{fontSize:15}}/>Log in
+                <i className="ti ti-login"/>Log in
               </GhostBtn>
-              <button onClick={onGuest} style={{padding:"10px",borderRadius:8,background:"transparent",color:"var(--color-text-tertiary)",border:"none",fontSize:13,cursor:"pointer"}}>
+              <button onClick={onGuest} style={{padding:"10px",borderRadius:8,background:"transparent",color:C.text3,border:"none",fontSize:13,cursor:"pointer"}}>
                 Continue as guest (reports won't be saved)
               </button>
             </div>
           </div>
         )}
-        {mode==="signup"&&(
+        {(mode==="signup"||mode==="login")&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1.5rem"}}>
-              <button onClick={()=>setMode("choose")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)"}}><i className="ti ti-arrow-left" style={{fontSize:18}}/></button>
-              <div style={{fontSize:17,fontWeight:500}}>Create account</div>
+              <button onClick={()=>setMode("choose")} style={{background:"none",border:"none",cursor:"pointer",color:C.text3}}><i className="ti ti-arrow-left" style={{fontSize:18}}/></button>
+              <div style={{fontSize:18,fontWeight:600,color:C.text}}>{mode==="signup"?"Create account":"Log in"}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:"1rem"}}>
+              {mode==="signup"&&(
+                <div>
+                  <label style={{fontSize:12,color:C.text2,display:"block",marginBottom:5}}>Full name</label>
+                  <input value={name} onChange={e=>setName(e.target.value)} placeholder="John Smith" style={inp}/>
+                </div>
+              )}
               <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Full name</label>
-                <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. John Smith" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
+                <label style={{fontSize:12,color:C.text2,display:"block",marginBottom:5}}>Email address</label>
+                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="john@email.com" type="email" style={inp}/>
               </div>
               <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Email address</label>
-                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="john@email.com" type="email" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
+                <label style={{fontSize:12,color:C.text2,display:"block",marginBottom:5}}>Password</label>
+                <input value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(mode==="signup"?handleSignup():handleLogin())} placeholder={mode==="signup"?"At least 6 characters":"Your password"} type="password" style={inp}/>
               </div>
-              <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Password</label>
-                <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters" type="password" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
-              </div>
-              {err&&<div style={{fontSize:12,color:G.r400}}><i className="ti ti-alert-circle" style={{fontSize:13,verticalAlign:-1}}/> {err}</div>}
+              {err&&<div style={{fontSize:12,color:C.red,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-alert-circle"/>{err}</div>}
             </div>
-            <PrimaryBtn onClick={handleSignup} disabled={loading} style={{width:"100%",justifyContent:"center",boxSizing:"border-box"}}>
-              {loading?"Creating account...":"Create account"}
-            </PrimaryBtn>
-            <p style={{textAlign:"center",fontSize:12,color:"var(--color-text-tertiary)",marginTop:12}}>Already have an account? <button onClick={()=>setMode("login")} style={{background:"none",border:"none",color:G[600],cursor:"pointer",fontSize:12,fontWeight:500}}>Log in</button></p>
+            <GreenBtn onClick={mode==="signup"?handleSignup:handleLogin} disabled={loading} style={{width:"100%",justifyContent:"center",boxSizing:"border-box"}}>
+              {loading?"Please wait...":(mode==="signup"?"Create account":"Log in")}
+            </GreenBtn>
+            <p style={{textAlign:"center",fontSize:12,color:C.text3,marginTop:12}}>
+              {mode==="signup"?"Already have an account?":"No account?"}{" "}
+              <button onClick={()=>setMode(mode==="signup"?"login":"signup")} style={{background:"none",border:"none",color:C.green,cursor:"pointer",fontSize:12,fontWeight:500}}>
+                {mode==="signup"?"Log in":"Sign up"}
+              </button>
+            </p>
           </div>
         )}
-        {mode==="login"&&(
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1.5rem"}}>
-              <button onClick={()=>setMode("choose")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)"}}><i className="ti ti-arrow-left" style={{fontSize:18}}/></button>
-              <div style={{fontSize:17,fontWeight:500}}>Log in</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:"1rem"}}>
-              <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Email address</label>
-                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="john@email.com" type="email" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
-              </div>
-              <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Password</label>
-                <input value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="Your password" type="password" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
-              </div>
-              {err&&<div style={{fontSize:12,color:G.r400}}><i className="ti ti-alert-circle" style={{fontSize:13,verticalAlign:-1}}/> {err}</div>}
-            </div>
-            <PrimaryBtn onClick={handleLogin} disabled={loading} style={{width:"100%",justifyContent:"center",boxSizing:"border-box"}}>
-              {loading?"Logging in...":"Log in"}
-            </PrimaryBtn>
-            <p style={{textAlign:"center",fontSize:12,color:"var(--color-text-tertiary)",marginTop:12}}>No account? <button onClick={()=>setMode("signup")} style={{background:"none",border:"none",color:G[600],cursor:"pointer",fontSize:12,fontWeight:500}}>Sign up</button></p>
-          </div>
-        )}
-      </Card>
+      </DarkCard>
     </div>
   );
 }
@@ -327,90 +274,64 @@ function AuthModal({onLogin,onGuest}) {
 function Dashboard({user,onClose,onViewReport}) {
   const [reports,setReports]=useState([]);
   const [loading,setLoading]=useState(true);
+  useEffect(()=>{db.getReports(user.id).then(d=>{setReports(Array.isArray(d)?d:[]);setLoading(false);});},[]);
 
-  useEffect(()=>{
-    db.getReports(user.id).then(data=>{setReports(Array.isArray(data)?data:[]);setLoading(false);});
-  },[]);
-
-  async function handleDelete(e, reportId) {
+  async function handleDelete(e,id) {
     e.stopPropagation();
-    if(!window.confirm("Delete this report?")) return;
-    await db.deleteReport(reportId);
-    setReports(prev=>prev.filter(r=>r.id!==reportId));
+    if(!window.confirm("Delete this report?"))return;
+    await db.deleteReport(id);
+    setReports(p=>p.filter(r=>r.id!==id));
   }
 
   function handleView(r) {
     try {
-      const reportData = r.report_data
-        ? (typeof r.report_data === "string" ? JSON.parse(r.report_data) : r.report_data)
-        : null;
-      if(!reportData){alert("Report data not found.");return;}
-      const html=`<!DOCTYPE html><html><head><title>${r.idea}</title><style>body{font-family:Inter,sans-serif;max-width:800px;margin:0 auto;padding:32px;color:#1a1a1a;line-height:1.7}h1{color:#3B6D11;font-size:24px}h2{color:#3B6D11;font-size:16px;margin-top:24px;border-bottom:1px solid #EAF3DE;padding-bottom:6px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#EAF3DE;padding:8px;text-align:left;color:#27500A}td{padding:8px;border-bottom:1px solid #eee}ul{margin:4px 0;padding-left:20px}li{margin-bottom:4px}.score{font-size:32px;font-weight:bold;color:#3B6D11}.footer{margin-top:40px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;text-align:center}</style></head><body>
-      <h1>Business Feasibility Report</h1>
-      <p style="color:#888;font-size:13px">${r.type} · ${r.city}, ${r.state} · ${new Date(r.created_at).toLocaleDateString()}</p>
-      <h2>Business Idea</h2><p>${r.idea}</p>
-      <h2>Feasibility Score</h2><p class="score">${reportData.feasibility?.score||"?"}/10</p><p>${reportData.feasibility?.summary||""}</p>
-      <h2>Competition — ${reportData.competition?.level||""}</h2><p>${reportData.competition?.summary||""}</p><p><strong>Market gap:</strong> ${reportData.competition?.gap||""}</p>
-      <h2>Challenges</h2>${(reportData.challenges||[]).map((c,i)=>`<p><strong>${i+1}. ${c.title}</strong><br/>${c.detail}</p>`).join("")}
-      <h2>Launch Checklist — ${r.state}</h2>${(reportData.checklist||[]).map(cat=>`<p><strong>${cat.category}</strong></p><ul>${cat.items.map(it=>`<li>${it}</li>`).join("")}</ul>`).join("")}
-      <h2>Estimated Budget</h2><p><strong style="color:#3B6D11">Minimum: ${(reportData.costs?.total_low||0).toLocaleString()}</strong> &nbsp;|&nbsp; <strong>Comfortable: ${(reportData.costs?.total_high||0).toLocaleString()}</strong></p>
-      <table><tr><th>Expense</th><th>Low</th><th>High</th></tr>${(reportData.costs?.breakdown||[]).map(row=>`<tr><td>${row.item}</td><td style="color:#3B6D11">${row.low.toLocaleString()}</td><td>${row.high.toLocaleString()}</td></tr>`).join("")}</table>
-      <p class="footer">Generated by INVENIO · AI-powered Business Feasibility Reports · ${new Date().toLocaleDateString()}</p>
-      </body></html>`;
-      const blob=new Blob([html],{type:"text/html"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;
-      a.download=`Invenio-Report-${r.type.replace(/[^a-z0-9]/gi,"-")}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch(e) {
-      console.error("Failed to load report:", e);
-      alert("Could not load this report. Please generate a new one.");
-    }
+      const rd=r.report_data?(typeof r.report_data==="string"?JSON.parse(r.report_data):r.report_data):null;
+      if(!rd){alert("Report data not found.");return;}
+      onViewReport(r.idea,r.city,r.state,r.type,rd);
+    } catch(e){alert("Could not load this report.");}
   }
+
   return (
-    <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",padding:"2rem"}}>
+    <div style={{minHeight:"calc(100vh - 60px)",background:C.bg,padding:"2rem"}}>
       <div style={{maxWidth:900,margin:"0 auto"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.5rem"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"2rem"}}>
           <div>
-            <h1 style={{fontSize:22,fontWeight:500,margin:"0 0 4px"}}>My reports</h1>
-            <div style={{fontSize:13,color:"var(--color-text-tertiary)"}}>Welcome back, {user.name}!</div>
+            <h1 style={{fontSize:24,fontWeight:700,margin:"0 0 4px",color:C.text}}>My reports</h1>
+            <div style={{fontSize:14,color:C.text3}}>Welcome back, {user.name}!</div>
           </div>
-          <PrimaryBtn onClick={onClose}><i className="ti ti-plus" style={{fontSize:14}}/>New report</PrimaryBtn>
+          <GreenBtn onClick={onClose}><i className="ti ti-plus"/>New report</GreenBtn>
         </div>
         {loading?(
-          <div style={{textAlign:"center",padding:"3rem",color:"var(--color-text-tertiary)"}}>Loading your reports...</div>
+          <div style={{textAlign:"center",padding:"3rem",color:C.text3}}>Loading...</div>
         ):reports.length===0?(
-          <Card style={{textAlign:"center",padding:"3rem"}}>
-            <i className="ti ti-file-off" style={{fontSize:40,color:"var(--color-text-tertiary)",display:"block",marginBottom:12}}/>
-            <div style={{fontSize:16,fontWeight:500,marginBottom:6}}>No reports yet</div>
-            <div style={{fontSize:13,color:"var(--color-text-tertiary)",marginBottom:"1.5rem"}}>Generate your first business feasibility report to get started</div>
-            <PrimaryBtn onClick={onClose}><i className="ti ti-sparkles" style={{fontSize:14}}/>Generate a report</PrimaryBtn>
-          </Card>
+          <DarkCard style={{textAlign:"center",padding:"4rem"}}>
+            <i className="ti ti-file-off" style={{fontSize:48,color:C.text3,display:"block",marginBottom:16}}/>
+            <div style={{fontSize:18,fontWeight:600,marginBottom:8,color:C.text}}>No reports yet</div>
+            <div style={{fontSize:14,color:C.text3,marginBottom:"1.5rem"}}>Generate your first business feasibility report</div>
+            <GreenBtn onClick={onClose}><i className="ti ti-sparkles"/>Generate a report</GreenBtn>
+          </DarkCard>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
             {reports.map((r,i)=>{
-              const rd = r.report_data ? (typeof r.report_data==="string" ? JSON.parse(r.report_data) : r.report_data) : null;
+              const rd=r.report_data?(typeof r.report_data==="string"?JSON.parse(r.report_data):r.report_data):null;
+              const score=rd?.feasibility?.score;
               return (
-              <Card key={i} style={{cursor:"pointer"}} onClick={()=>handleView(r)}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <i className="ti ti-file-text" style={{fontSize:18,color:G[600]}}/>
+                <DarkCard key={i} onClick={()=>handleView(r)} style={{cursor:"pointer",border:`1px solid ${C.border}`,transition:"border-color 0.15s"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                    <div style={{width:38,height:38,borderRadius:10,background:C.greenbg,border:`1px solid ${C.green2}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <i className="ti ti-file-text" style={{fontSize:18,color:C.green}}/>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:11,background:C.greenbg,color:C.green,padding:"2px 8px",borderRadius:20,fontWeight:600,border:`1px solid ${C.green2}`}}>{score||"?"}/10</span>
+                      <button onClick={e=>handleDelete(e,r.id)} style={{width:26,height:26,borderRadius:6,background:C.redbg,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <i className="ti ti-trash" style={{fontSize:13,color:C.red}}/>
+                      </button>
+                    </div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:11,background:G[50],color:G[800],padding:"2px 8px",borderRadius:20,fontWeight:500}}>{rd?.feasibility?.score||"?"}/10</span>
-                    <button onClick={e=>handleDelete(e,r.id)} style={{width:26,height:26,borderRadius:6,background:G.r50,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <i className="ti ti-trash" style={{fontSize:13,color:G.r400}}/>
-                    </button>
-                  </div>
-                </div>
-                <div style={{fontSize:14,fontWeight:500,marginBottom:4,lineHeight:1.3}}>{r.idea?.length>60?r.idea.slice(0,60)+"...":r.idea}</div>
-                <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:8}}>{r.type} · {r.city}, {r.state}</div>
-                <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{new Date(r.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-              </Card>
+                  <div style={{fontSize:14,fontWeight:600,marginBottom:6,lineHeight:1.4,color:C.text}}>{r.idea?.length>60?r.idea.slice(0,60)+"...":r.idea}</div>
+                  <div style={{fontSize:12,color:C.text3,marginBottom:8}}>{r.type} · {r.city}, {r.state}</div>
+                  <div style={{fontSize:11,color:C.text3}}>{new Date(r.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+                </DarkCard>
               );
             })}
           </div>
@@ -432,6 +353,7 @@ export default function App() {
   const [showDashboard,setShowDashboard]=useState(false);
   const [guestInfo,setGuestInfo]=useState({name:"",email:""});
   const [showGuestGate,setShowGuestGate]=useState(false);
+  const [wordCount,setWordCount]=useState(0);
 
   useEffect(()=>{
     const s=document.createElement("script");
@@ -443,35 +365,21 @@ export default function App() {
     link.href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
     document.head.appendChild(link);
     document.body.style.fontFamily="'Inter', sans-serif";
+    document.body.style.background=C.bg;
     const saved=localStorage.getItem("invenio_user");
     if(saved) try{setUser(JSON.parse(saved));}catch{}
   },[]);
 
-  function goHome() {
-    setPhase("form");setStep(0);setReport(null);setChecked({});
-    setShowDashboard(false);setShowGuestGate(false);setShowAuth(false);
-  }
-
-  function handleLogin(u) {
-    setUser(u);
-    localStorage.setItem("invenio_user",JSON.stringify(u));
-    setShowAuth(false);
-  }
-
-  function handleLogout() {
-    setUser(null);
-    localStorage.removeItem("invenio_user");
-    goHome();
-  }
+  function goHome(){setPhase("form");setStep(0);setReport(null);setChecked({});setShowDashboard(false);setShowGuestGate(false);setShowAuth(false);}
+  function handleLogin(u){setUser(u);localStorage.setItem("invenio_user",JSON.stringify(u));setShowAuth(false);}
+  function handleLogout(){setUser(null);localStorage.removeItem("invenio_user");goHome();}
 
   const valid=[form.idea.trim().length>10,form.state&&form.city.trim(),form.type,true];
 
   async function analyze(name,email) {
     setShowGuestGate(false);
     setPhase("loading");
-    if(window.emailjs){
-      window.emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{user_name:name,user_email:email,business_idea:form.idea,city:form.city,state:form.state,business_type:form.type}).catch(()=>{});
-    }
+    if(window.emailjs){window.emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{user_name:name,user_email:email,business_idea:form.idea,city:form.city,state:form.state,business_type:form.type}).catch(()=>{});}
     const prompt=`You are a small business advisor. Return ONLY a valid JSON object, no markdown:
 {"feasibility":{"score":<1-10>,"summary":"<2-3 sentences>"},"competition":{"level":"<Low|Medium|High>","summary":"<2-3 sentences about ${form.city}, ${form.state}>","competitors":["<type1>","<type2>","<type3>"],"gap":"<one sentence>"},"challenges":[{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"}],"checklist":[{"category":"Legal & registration","items":["<step>","<step>","<step>"]},{"category":"Financial setup","items":["<step>","<step>"]},{"category":"Operations","items":["<step>","<step>","<step>"]},{"category":"Marketing & launch","items":["<step>","<step>"]}],"costs":{"total_low":<number>,"total_high":<number>,"breakdown":[{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"}]}}
 Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${form.type} | ${form.location==="home"?"Home-based":"Physical location"}`;
@@ -481,72 +389,52 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
       const txt=data.content.find(b=>b.type==="text")?.text||"";
       const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
       setReport(parsed);
-      if(user){
-        const saved=await db.saveReport(user.id,form,parsed);
-        console.log("Saved:",saved);
-      }
+      if(user){await db.saveReport(user.id,form,parsed);}
       setPhase("report");
-    } catch(e){console.error(e);alert("Analysis failed. Please try again.");setPhase("form");}
+    } catch(e){alert("Analysis failed. Please try again.");setPhase("form");}
   }
 
-  function handleGenerate() {
-    if(user){analyze(user.name,user.email);}
-    else{setShowGuestGate(true);}
-  }
+  function handleGenerate(){if(user)analyze(user.name,user.email);else setShowGuestGate(true);}
+
+  const inp={width:"100%",boxSizing:"border-box",fontSize:14,background:"#1a1a1a",border:`1px solid ${C.border2}`,color:C.text,borderRadius:8,padding:"10px 12px",outline:"none"};
 
   if(showAuth) return <AuthModal onLogin={handleLogin} onGuest={()=>{setShowAuth(false);setShowGuestGate(true);}}/>;
 
   if(showDashboard) return (
     <>
       <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-      <Dashboard user={user} onClose={()=>setShowDashboard(false)} onViewReport={(idea,city,state,type,reportData)=>{
-        setForm({idea,city,state,type,location:"home"});
-        setReport(reportData);
-        setShowDashboard(false);
-        setPhase("report");
-      }}/>
+      <Dashboard user={user} onClose={()=>setShowDashboard(false)} onViewReport={(idea,city,state,type,rd)=>{setForm({idea,city,state,type,location:"home"});setReport(rd);setShowDashboard(false);setPhase("report");}}/>
     </>
   );
 
-  if(phase==="loading") return (
-    <>
-      <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-      <Loader/>
-    </>
-  );
+  if(phase==="loading") return <><Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/><Loader/></>;
 
   if(showGuestGate) return (
     <>
       <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-      <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
-        <Card style={{maxWidth:460,width:"100%",padding:"2rem"}}>
+      <div style={{minHeight:"calc(100vh - 60px)",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
+        <DarkCard style={{maxWidth:460,width:"100%",padding:"2rem"}}>
           <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
-            <div style={{width:52,height:52,borderRadius:16,background:G[50],display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
-              <i className="ti ti-mail" style={{fontSize:24,color:G[600]}}/>
+            <div style={{width:52,height:52,borderRadius:16,background:C.greenbg,border:`1px solid ${C.green2}`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
+              <i className="ti ti-mail" style={{fontSize:24,color:C.green}}/>
             </div>
-            <div style={{fontSize:18,fontWeight:500,marginBottom:6}}>Almost ready</div>
-            <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>Create a free account to save your reports, or continue as guest</div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:6,color:C.text}}>Almost ready</div>
+            <div style={{fontSize:13,color:C.text2}}>Create a free account to save your reports, or continue as guest</div>
           </div>
-          <PrimaryBtn onClick={()=>{setShowGuestGate(false);setShowAuth(true);}} style={{width:"100%",justifyContent:"center",boxSizing:"border-box",marginBottom:14}}>
-            <i className="ti ti-user-plus" style={{fontSize:14}}/>Create account
-          </PrimaryBtn>
-          <div style={{borderTop:"0.5px solid var(--color-border-tertiary)",paddingTop:14}}>
-            <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:10,textAlign:"center"}}>Or continue as guest</div>
+          <GreenBtn onClick={()=>{setShowGuestGate(false);setShowAuth(true);}} style={{width:"100%",justifyContent:"center",boxSizing:"border-box",marginBottom:14}}>
+            <i className="ti ti-user-plus"/>Create free account
+          </GreenBtn>
+          <div style={{borderTop:`1px solid ${C.border}`,paddingTop:14}}>
+            <div style={{fontSize:12,color:C.text3,marginBottom:10,textAlign:"center"}}>Or continue as guest</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Your name</label>
-                <input value={guestInfo.name} onChange={e=>setGuestInfo(p=>({...p,name:e.target.value}))} placeholder="e.g. John Smith" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
-              </div>
-              <div>
-                <label style={{fontSize:12,color:"var(--color-text-secondary)",display:"block",marginBottom:4}}>Email address</label>
-                <input value={guestInfo.email} onChange={e=>setGuestInfo(p=>({...p,email:e.target.value}))} placeholder="john@email.com" type="email" style={{width:"100%",boxSizing:"border-box",fontSize:14}}/>
-              </div>
-              <GhostBtn onClick={()=>{if(guestInfo.name&&guestInfo.email)analyze(guestInfo.name,guestInfo.email);}} style={{justifyContent:"center",width:"100%",boxSizing:"border-box"}}>
+              <input value={guestInfo.name} onChange={e=>setGuestInfo(p=>({...p,name:e.target.value}))} placeholder="Your name" style={inp}/>
+              <input value={guestInfo.email} onChange={e=>setGuestInfo(p=>({...p,email:e.target.value}))} placeholder="Your email" type="email" style={inp}/>
+              <GhostBtn onClick={()=>{if(guestInfo.name&&guestInfo.email)analyze(guestInfo.name,guestInfo.email);}} style={{justifyContent:"center",width:"100%",boxSizing:"border-box",borderColor:C.border2,color:C.text2}}>
                 Continue as guest
               </GhostBtn>
             </div>
           </div>
-        </Card>
+        </DarkCard>
       </div>
     </>
   );
@@ -554,116 +442,124 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
   if(phase==="form") return (
     <>
       <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-      <div style={{minHeight:"calc(100vh - 60px)",background:"var(--color-background-secondary)"}}>
-        <div style={{maxWidth:1100,margin:"0 auto",padding:"3rem 2rem",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3rem",alignItems:"start"}}>
+      <div style={{background:C.bg,minHeight:"calc(100vh - 60px)"}}>
+        <div style={{maxWidth:1100,margin:"0 auto",padding:"4rem 2rem",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4rem",alignItems:"start"}}>
           <div>
-            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:G[50],color:G[800],fontSize:12,fontWeight:500,padding:"4px 12px",borderRadius:20,marginBottom:16}}>
-              <i className="ti ti-sparkles" style={{fontSize:13}}/>AI-powered analysis
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:C.greenbg,border:`1px solid ${C.green2}`,color:C.green,fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:20,marginBottom:24}}>
+              <i className="ti ti-sparkles" style={{fontSize:13}}/>Invenio Intelligence
             </div>
-            <h1 style={{fontSize:36,fontWeight:500,lineHeight:1.2,margin:"0 0 16px"}}>Turn your business idea into a plan</h1>
-            <p style={{fontSize:16,color:"var(--color-text-secondary)",lineHeight:1.7,margin:"0 0 2rem"}}>Invenio gives you a comprehensive Business Feasibility Report in seconds — personalized to your idea, city, and state.</p>
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {[["ti-star","Feasibility score","Rated 1-10 with detailed reasoning"],["ti-trophy","Competition analysis","Real competitors in your area with market gaps"],["ti-checklist","State-specific checklist","Every legal and operational step to launch"],["ti-currency-dollar","Cost estimate","Realistic budget from $0 to first sale"]].map(([icon,title,desc])=>(
-                <div key={title} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-                  <div style={{width:36,height:36,borderRadius:8,background:G[50],display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <i className={`ti ${icon}`} style={{fontSize:17,color:G[600]}}/>
+            <h1 style={{fontSize:48,fontWeight:800,lineHeight:1.1,margin:"0 0 20px",color:C.text}}>
+              Your business idea,{" "}
+              <span style={{color:C.green}}>stress-tested by AI.</span>
+            </h1>
+            <p style={{fontSize:17,color:C.text2,lineHeight:1.7,margin:"0 0 2.5rem"}}>
+              Instantly generate a comprehensive feasibility report, competitor analysis, cost estimate, and compliance checklist. Stop guessing, start executing.
+            </p>
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {[["ti-star","Feasibility Score","Data-driven 1-10 rating with precise reasoning based on market conditions"],["ti-trophy","Competition Analysis","Identify real competitors and pinpoint actionable market gaps"],["ti-checklist","Compliance Checklist","State-specific legal steps, permits, and registrations"],["ti-currency-dollar","Cost Estimate","Realistic budget breakdown from day one to first sale"]].map(([icon,title,desc])=>(
+                <div key={title} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+                  <div style={{width:42,height:42,borderRadius:10,background:C.greenbg,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <i className={`ti ${icon}`} style={{fontSize:19,color:C.green}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:14,fontWeight:500,marginBottom:2}}>{title}</div>
-                    <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>{desc}</div>
+                    <div style={{fontSize:15,fontWeight:600,marginBottom:3,color:C.text}}>{title}</div>
+                    <div style={{fontSize:13,color:C.text3,lineHeight:1.5}}>{desc}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <Card style={{padding:"2rem"}}>
-            <StepDots step={step}/>
+
+          <DarkCard style={{padding:"2rem"}}>
+            <div style={{display:"flex",gap:4,marginBottom:"1.5rem"}}>
+              {Array.from({length:4}).map((_,i)=>(
+                <div key={i} style={{height:3,borderRadius:4,flex:i===step?2:1,background:i<=step?C.green:C.border,transition:"all 0.3s"}}/>
+              ))}
+            </div>
+
             {step===0&&(
               <div>
-                <label style={{fontSize:14,fontWeight:500,display:"block",marginBottom:4}}>What's your business idea?</label>
-                <span style={{fontSize:12,color:"var(--color-text-tertiary)",display:"block",marginBottom:10}}>Describe it in a sentence or two</span>
-                <textarea value={form.idea} onChange={e=>setForm(p=>({...p,idea:e.target.value}))} placeholder="e.g. A home-based bakery specialising in custom cakes..." rows={4} style={{width:"100%",resize:"vertical",fontSize:14,padding:"10px 12px",borderRadius:8,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",lineHeight:1.6}}/>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12}}>
-                  <span style={{fontSize:12,color:form.idea.length>10?G[600]:"var(--color-text-tertiary)"}}>{form.idea.length>10?"✓ Ready":"At least 10 characters"}</span>
-                  <PrimaryBtn onClick={()=>setStep(1)} disabled={!valid[0]}>Continue <i className="ti ti-arrow-right" style={{fontSize:14}}/></PrimaryBtn>
+                <label style={{fontSize:14,fontWeight:600,display:"block",marginBottom:6,color:C.text}}>The Idea</label>
+                <textarea value={form.idea} onChange={e=>{setForm(p=>({...p,idea:e.target.value}));}} placeholder="Describe your business idea, target audience, and what makes it unique..." rows={5} style={{...inp,resize:"vertical",lineHeight:1.6,marginBottom:8}}/>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:12,color:form.idea.length>10?C.green:C.text3}}>{form.idea.length>10?"✓ Ready":"At least 10 characters"}</span>
+                  <GreenBtn onClick={()=>setStep(1)} disabled={!valid[0]}>Continue <i className="ti ti-arrow-right"/></GreenBtn>
                 </div>
               </div>
             )}
             {step===1&&(
               <div>
-                <label style={{fontSize:14,fontWeight:500,display:"block",marginBottom:4}}>Where are you located?</label>
-                <span style={{fontSize:12,color:"var(--color-text-tertiary)",display:"block",marginBottom:12}}>Determines your legal checklist and cost estimates</span>
+                <label style={{fontSize:14,fontWeight:600,display:"block",marginBottom:14,color:C.text}}>Location</label>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
                   <div>
-                    <div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:5}}>State</div>
-                    <select value={form.state} onChange={e=>setForm(p=>({...p,state:e.target.value}))} style={{width:"100%",fontSize:14}}>
+                    <div style={{fontSize:12,color:C.text2,marginBottom:5}}>State</div>
+                    <select value={form.state} onChange={e=>setForm(p=>({...p,state:e.target.value}))} style={{...inp}}>
                       <option value="">Select state...</option>
                       {US_STATES.map(s=><option key={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:5}}>City</div>
-                    <input value={form.city} onChange={e=>setForm(p=>({...p,city:e.target.value}))} placeholder="e.g. Austin" style={{width:"100%",fontSize:14,boxSizing:"border-box"}}/>
+                    <div style={{fontSize:12,color:C.text2,marginBottom:5}}>City</div>
+                    <input value={form.city} onChange={e=>setForm(p=>({...p,city:e.target.value}))} placeholder="e.g. Austin" style={inp}/>
                   </div>
                 </div>
-                <div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:8}}>Where will you operate?</div>
+                <div style={{fontSize:12,color:C.text2,marginBottom:8}}>Where will you operate?</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-                  {[["home","ti-home","Home-based","From your home"],["physical","ti-building","Physical location","Storefront or office"]].map(([val,icon,title,sub])=>(
-                    <button key={val} onClick={()=>setForm(p=>({...p,location:val}))} style={{padding:"12px",borderRadius:8,border:`1.5px solid ${form.location===val?G[600]:"var(--color-border-tertiary)"}`,background:form.location===val?G[50]:"var(--color-background-primary)",cursor:"pointer",textAlign:"left"}}>
-                      <i className={`ti ${icon}`} style={{fontSize:18,color:form.location===val?G[600]:"var(--color-text-tertiary)",display:"block",marginBottom:5}}/>
-                      <div style={{fontSize:13,fontWeight:500,color:form.location===val?G[800]:"var(--color-text-primary)",marginBottom:2}}>{title}</div>
-                      <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{sub}</div>
+                  {[["home","ti-home","Home-based","Operate from home"],["physical","ti-building","Physical location","Storefront or office"]].map(([val,icon,title,sub])=>(
+                    <button key={val} onClick={()=>setForm(p=>({...p,location:val}))} style={{padding:"12px",borderRadius:8,border:`1.5px solid ${form.location===val?C.green:C.border2}`,background:form.location===val?C.greenbg:"transparent",cursor:"pointer",textAlign:"left"}}>
+                      <i className={`ti ${icon}`} style={{fontSize:18,color:form.location===val?C.green:C.text3,display:"block",marginBottom:5}}/>
+                      <div style={{fontSize:13,fontWeight:600,color:form.location===val?C.green:C.text,marginBottom:2}}>{title}</div>
+                      <div style={{fontSize:11,color:C.text3}}>{sub}</div>
                     </button>
                   ))}
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
-                  <GhostBtn onClick={()=>setStep(0)}><i className="ti ti-arrow-left" style={{fontSize:14}}/>Back</GhostBtn>
-                  <PrimaryBtn onClick={()=>setStep(2)} disabled={!valid[1]}>Continue <i className="ti ti-arrow-right" style={{fontSize:14}}/></PrimaryBtn>
+                  <GhostBtn onClick={()=>setStep(0)} style={{borderColor:C.border2,color:C.text2}}><i className="ti ti-arrow-left"/>Back</GhostBtn>
+                  <GreenBtn onClick={()=>setStep(2)} disabled={!valid[1]}>Continue <i className="ti ti-arrow-right"/></GreenBtn>
                 </div>
               </div>
             )}
             {step===2&&(
               <div>
-                <label style={{fontSize:14,fontWeight:500,display:"block",marginBottom:4}}>What type of business?</label>
-                <span style={{fontSize:12,color:"var(--color-text-tertiary)",display:"block",marginBottom:10}}>Select the category that best fits</span>
+                <label style={{fontSize:14,fontWeight:600,display:"block",marginBottom:10,color:C.text}}>Business type</label>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:16,maxHeight:280,overflowY:"auto"}}>
                   {BUSINESS_TYPES.map(t=>(
-                    <button key={t} onClick={()=>setForm(p=>({...p,type:t}))} style={{padding:"8px 12px",borderRadius:8,border:`1.5px solid ${form.type===t?G[600]:"var(--color-border-tertiary)"}`,background:form.type===t?G[50]:"var(--color-background-primary)",color:form.type===t?G[800]:"var(--color-text-secondary)",fontWeight:form.type===t?500:400,fontSize:13,cursor:"pointer",textAlign:"left"}}>
+                    <button key={t} onClick={()=>setForm(p=>({...p,type:t}))} style={{padding:"8px 12px",borderRadius:8,border:`1.5px solid ${form.type===t?C.green:C.border2}`,background:form.type===t?C.greenbg:"transparent",color:form.type===t?C.green:C.text2,fontWeight:form.type===t?600:400,fontSize:13,cursor:"pointer",textAlign:"left"}}>
                       {t}
                     </button>
                   ))}
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
-                  <GhostBtn onClick={()=>setStep(1)}><i className="ti ti-arrow-left" style={{fontSize:14}}/>Back</GhostBtn>
-                  <PrimaryBtn onClick={()=>setStep(3)} disabled={!valid[2]}>Continue <i className="ti ti-arrow-right" style={{fontSize:14}}/></PrimaryBtn>
+                  <GhostBtn onClick={()=>setStep(1)} style={{borderColor:C.border2,color:C.text2}}><i className="ti ti-arrow-left"/>Back</GhostBtn>
+                  <GreenBtn onClick={()=>setStep(3)} disabled={!valid[2]}>Continue <i className="ti ti-arrow-right"/></GreenBtn>
                 </div>
               </div>
             )}
             {step===3&&(
               <div>
-                <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Review your details</div>
+                <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Review details</div>
                 <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
-                  {[["ti-bulb","Business idea",form.idea.length>80?form.idea.slice(0,80)+"...":form.idea],["ti-map-pin","Location",`${form.city}, ${form.state}`],["ti-briefcase","Business type",form.type],["ti-home","Setup",form.location==="home"?"Home-based":"Physical location"]].map(([icon,label,val])=>(
-                    <div key={label} style={{display:"flex",gap:10,padding:"10px 12px",borderRadius:8,background:"var(--color-background-secondary)"}}>
-                      <div style={{width:30,height:30,borderRadius:6,background:G[50],display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        <i className={`ti ${icon}`} style={{fontSize:15,color:G[600]}}/>
+                  {[["ti-bulb","Business idea",form.idea.length>80?form.idea.slice(0,80)+"...":form.idea],["ti-map-pin","Location",`${form.city}, ${form.state}`],["ti-briefcase","Type",form.type],["ti-home","Setup",form.location==="home"?"Home-based":"Physical location"]].map(([icon,label,val])=>(
+                    <div key={label} style={{display:"flex",gap:10,padding:"10px 12px",borderRadius:8,background:"#1a1a1a",border:`1px solid ${C.border}`}}>
+                      <div style={{width:28,height:28,borderRadius:6,background:C.greenbg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <i className={`ti ${icon}`} style={{fontSize:14,color:C.green}}/>
                       </div>
                       <div>
-                        <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:1}}>{label}</div>
-                        <div style={{fontSize:13,lineHeight:1.4}}>{val}</div>
+                        <div style={{fontSize:11,color:C.text3,marginBottom:1}}>{label}</div>
+                        <div style={{fontSize:13,color:C.text,lineHeight:1.4}}>{val}</div>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
-                  <GhostBtn onClick={()=>setStep(2)}><i className="ti ti-arrow-left" style={{fontSize:14}}/>Back</GhostBtn>
-                  <PrimaryBtn onClick={handleGenerate}>
-                    <i className="ti ti-sparkles" style={{fontSize:15}}/>Generate my report
-                  </PrimaryBtn>
+                  <GhostBtn onClick={()=>setStep(2)} style={{borderColor:C.border2,color:C.text2}}><i className="ti ti-arrow-left"/>Back</GhostBtn>
+                  <GreenBtn onClick={handleGenerate}>
+                    <i className="ti ti-sparkles"/>Generate report →
+                  </GreenBtn>
                 </div>
               </div>
             )}
-          </Card>
+          </DarkCard>
         </div>
       </div>
     </>
@@ -671,81 +567,102 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
 
   if(phase==="report"&&report) {
     const compLevel=report?.competition?.level||"Medium";
-    const cm=compMeta[compLevel]||compMeta.Medium;
+    const compColor=compLevel==="Low"?C.green:compLevel==="Medium"?C.amber:C.red;
+    const compBg=compLevel==="Low"?C.greenbg:compLevel==="Medium"?C.amberbg:C.redbg;
     const doneCount=Object.values(checked).filter(Boolean).length;
     const total=(report.checklist||[]).reduce((a,c)=>a+c.items.length,0);
     const score=report.feasibility?.score||0;
+    const scoreColor=score>=7?C.green:score>=5?C.amber:C.red;
     return (
       <>
         <Navbar user={user} onLogout={handleLogout} onShowAuth={()=>setShowAuth(true)} onShowDashboard={()=>setShowDashboard(true)} onHome={goHome}/>
-        <div style={{background:"var(--color-background-secondary)",minHeight:"calc(100vh - 60px)"}}>
+        <div style={{background:C.bg,minHeight:"calc(100vh - 60px)"}}>
           <div style={{maxWidth:1100,margin:"0 auto",padding:"2rem"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.5rem",flexWrap:"wrap",gap:12}}>
               <div>
-                <h1 style={{fontSize:20,fontWeight:500,margin:"0 0 4px"}}>{form.idea.length>60?form.idea.slice(0,60)+"...":form.idea}</h1>
-                <div style={{fontSize:13,color:"var(--color-text-tertiary)"}}>{form.type} · {form.city}, {form.state}</div>
+                <h1 style={{fontSize:20,fontWeight:700,margin:"0 0 4px",color:C.text}}>{form.idea.length>60?form.idea.slice(0,60)+"...":form.idea}</h1>
+                <div style={{fontSize:13,color:C.text3}}>{form.type} · {form.city}, {form.state}</div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                {user&&<div style={{fontSize:12,background:G[50],color:G[800],padding:"5px 12px",borderRadius:20,display:"flex",alignItems:"center",gap:5,fontWeight:500}}><i className="ti ti-check" style={{fontSize:12}}/>Report saved</div>}
-                <button onClick={goHome} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-secondary)",color:"var(--color-text-secondary)",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                  <i className="ti ti-refresh" style={{fontSize:14}}/>New report
+                {user&&<div style={{fontSize:12,background:C.greenbg,color:C.green,padding:"5px 12px",borderRadius:20,display:"flex",alignItems:"center",gap:5,fontWeight:600,border:`1px solid ${C.green2}`}}><i className="ti ti-check"/>Report saved</div>}
+                <button onClick={goHome} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:"transparent",border:`1px solid ${C.border2}`,color:C.text2,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                  <i className="ti ti-refresh"/>New report
                 </button>
               </div>
             </div>
+
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:"1.5rem"}}>
               {[
-                {label:"Feasibility score",value:`${score}/10`,color:score>=7?G[600]:score>=5?G.a400:G.r400,bg:score>=7?G[50]:score>=5?G.a50:G.r50,icon:"ti-star"},
-                {label:"Competition level",value:compLevel,color:cm.color,bg:cm.bg,icon:"ti-trophy"},
-                {label:"Tasks completed",value:`${doneCount}/${total}`,color:G[600],bg:G[50],icon:"ti-checklist"},
-                {label:"Min. budget",value:`$${(report.costs?.total_low||0).toLocaleString()}`,color:G[600],bg:G[50],icon:"ti-currency-dollar"},
+                {label:"Feasibility",value:`${score}/10`,color:scoreColor,icon:"ti-star"},
+                {label:"Competition",value:compLevel,color:compColor,icon:"ti-trophy"},
+                {label:"Progress",value:`${doneCount}/${total}`,color:C.green,icon:"ti-checklist"},
+                {label:"Min. budget",value:`$${(report.costs?.total_low||0).toLocaleString()}`,color:C.green,icon:"ti-currency-dollar"},
               ].map(m=>(
-                <Card key={m.label} style={{padding:"1rem"}}>
+                <DarkCard key={m.label} style={{padding:"1rem"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <div style={{width:28,height:28,borderRadius:6,background:m.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <div style={{width:28,height:28,borderRadius:6,background:C.greenbg,display:"flex",alignItems:"center",justifyContent:"center"}}>
                       <i className={`ti ${m.icon}`} style={{fontSize:14,color:m.color}}/>
                     </div>
-                    <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{m.label}</div>
+                    <div style={{fontSize:11,color:C.text3}}>{m.label}</div>
                   </div>
-                  <div style={{fontSize:18,fontWeight:500,color:m.color}}>{m.value}</div>
-                </Card>
+                  <div style={{fontSize:18,fontWeight:700,color:m.color}}>{m.value}</div>
+                </DarkCard>
               ))}
             </div>
-            <Card>
+
+            <DarkCard>
               <div style={{display:"flex",gap:6,marginBottom:"1.25rem",flexWrap:"wrap"}}>
                 {TABS.map(t=>(
-                  <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 16px",borderRadius:20,border:`1.5px solid ${tab===t.id?G[600]:"var(--color-border-tertiary)"}`,background:tab===t.id?G[600]:"transparent",color:tab===t.id?"#fff":"var(--color-text-secondary)",fontWeight:tab===t.id?500:400,fontSize:13,cursor:"pointer"}}>
+                  <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 16px",borderRadius:20,border:`1.5px solid ${tab===t.id?C.green:C.border2}`,background:tab===t.id?C.greenbg:"transparent",color:tab===t.id?C.green:C.text2,fontWeight:tab===t.id?600:400,fontSize:13,cursor:"pointer"}}>
                     <i className={`ti ${t.icon}`} style={{fontSize:13}}/>{t.label}
                   </button>
                 ))}
               </div>
-              {tab===0&&<div><SectionLabel>Feasibility rating</SectionLabel><ScoreRing score={score} summary={report.feasibility?.summary||""}/></div>}
+
+              {tab===0&&(
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:16}}>Feasibility rating</div>
+                  <div style={{display:"flex",gap:"2rem",alignItems:"center"}}>
+                    <svg width={100} height={100} style={{flexShrink:0}}>
+                      <circle cx={50} cy={50} r={40} fill="none" stroke={C.border} strokeWidth={7}/>
+                      <circle cx={50} cy={50} r={40} fill="none" stroke={scoreColor} strokeWidth={7} strokeDasharray={2*Math.PI*40} strokeDashoffset={2*Math.PI*40*(1-score/10)} strokeLinecap="round" transform="rotate(-90 50 50)"/>
+                      <text x={50} y={46} textAnchor="middle" style={{fontSize:22,fontWeight:700,fill:scoreColor}}>{score}</text>
+                      <text x={50} y={62} textAnchor="middle" style={{fontSize:10,fill:C.text3}}>/ 10</text>
+                    </svg>
+                    <div>
+                      <div style={{display:"inline-block",background:scoreColor==="green"?C.greenbg:C.amberbg,color:scoreColor,fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,marginBottom:8}}>{score>=7?"Strong":score>=5?"Moderate":"Challenging"}</div>
+                      <p style={{fontSize:14,color:C.text2,lineHeight:1.7,margin:0}}>{report.feasibility?.summary}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {tab===1&&(
                 <div>
-                  <SectionLabel>Competition in {form.city}</SectionLabel>
-                  <div style={{display:"inline-flex",alignItems:"center",gap:6,background:cm.bg,color:cm.text,fontSize:12,fontWeight:500,padding:"4px 12px",borderRadius:20,marginBottom:14}}>{compLevel} competition</div>
-                  <p style={{fontSize:14,color:"var(--color-text-secondary)",lineHeight:1.75,marginBottom:14}}>{report.competition?.summary||""}</p>
-                  <div style={{fontSize:12,fontWeight:500,marginBottom:8}}>Likely competitors nearby</div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Competition in {form.city}</div>
+                  <div style={{display:"inline-flex",alignItems:"center",gap:6,background:compBg,color:compColor,fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:20,marginBottom:14,border:`1px solid ${compColor}33`}}>{compLevel} competition</div>
+                  <p style={{fontSize:14,color:C.text2,lineHeight:1.75,marginBottom:14}}>{report.competition?.summary}</p>
+                  <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:8}}>Likely competitors nearby</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-                    {(report.competition?.competitors||[]).map((c,i)=><span key={i} style={{background:G[50],color:G[800],fontSize:12,fontWeight:500,padding:"3px 10px",borderRadius:20}}>{c}</span>)}
+                    {(report.competition?.competitors||[]).map((c,i)=><span key={i} style={{background:C.greenbg,color:C.green,fontSize:12,fontWeight:500,padding:"3px 10px",borderRadius:20,border:`1px solid ${C.green2}`}}>{c}</span>)}
                   </div>
-                  <div style={{background:G[50],borderRadius:8,padding:"10px 14px",display:"flex",gap:8}}>
-                    <i className="ti ti-bulb" style={{fontSize:15,color:G[600],flexShrink:0,marginTop:1}}/>
-                    <div style={{fontSize:13,color:G[800],lineHeight:1.6}}><strong>Market gap:</strong> {report.competition?.gap||""}</div>
+                  <div style={{background:C.greenbg,borderRadius:8,padding:"12px 14px",display:"flex",gap:8,border:`1px solid ${C.green2}`}}>
+                    <i className="ti ti-bulb" style={{fontSize:15,color:C.green,flexShrink:0,marginTop:1}}/>
+                    <div style={{fontSize:13,color:C.green,lineHeight:1.6}}><strong>Market gap:</strong> {report.competition?.gap}</div>
                   </div>
                 </div>
               )}
               {tab===2&&(
                 <div>
-                  <SectionLabel>Challenges to expect</SectionLabel>
+                  <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Challenges to expect</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                     {(report.challenges||[]).map((c,i)=>(
-                      <div key={i} style={{display:"flex",gap:12,padding:"12px",background:"var(--color-background-secondary)",borderRadius:8}}>
-                        <div style={{width:28,height:28,borderRadius:6,background:G.a50,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                          <span style={{fontSize:12,fontWeight:500,color:G.a800}}>{i+1}</span>
+                      <div key={i} style={{display:"flex",gap:12,padding:"14px",background:"#1a1a1a",borderRadius:8,border:`1px solid ${C.border}`}}>
+                        <div style={{width:28,height:28,borderRadius:6,background:C.amberbg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          <span style={{fontSize:12,fontWeight:700,color:C.amber}}>{i+1}</span>
                         </div>
                         <div>
-                          <div style={{fontWeight:500,fontSize:14,marginBottom:3}}>{c.title}</div>
-                          <div style={{color:"var(--color-text-secondary)",fontSize:13,lineHeight:1.6}}>{c.detail}</div>
+                          <div style={{fontWeight:600,fontSize:14,marginBottom:3,color:C.text}}>{c.title}</div>
+                          <div style={{color:C.text3,fontSize:13,lineHeight:1.6}}>{c.detail}</div>
                         </div>
                       </div>
                     ))}
@@ -754,23 +671,23 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               )}
               {tab===3&&(
                 <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                    <SectionLabel>Launch checklist — {form.state}</SectionLabel>
-                    <span style={{fontSize:12,color:doneCount===total&&total>0?G[600]:"var(--color-text-tertiary)",fontWeight:500}}>{doneCount}/{total} done</span>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em"}}>Launch checklist — {form.state}</div>
+                    <span style={{fontSize:12,color:doneCount===total&&total>0?C.green:C.text3,fontWeight:600}}>{doneCount}/{total} done</span>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
                     {(report.checklist||[]).map((cat,ci)=>(
                       <div key={ci}>
-                        <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>{cat.category}</div>
+                        <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>{cat.category}</div>
                         <div style={{display:"flex",flexDirection:"column",gap:4}}>
                           {cat.items.map((item,ii)=>{
                             const k=`${ci}-${ii}`;const done=checked[k];
                             return (
-                              <div key={ii} onClick={()=>setChecked(p=>({...p,[k]:!p[k]}))} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 10px",borderRadius:8,background:done?G[50]:"var(--color-background-secondary)",cursor:"pointer",border:`0.5px solid ${done?G[100]:"transparent"}`}}>
-                                <div style={{width:17,height:17,borderRadius:4,border:`1.5px solid ${done?G[600]:"var(--color-border-secondary)"}`,background:done?G[600]:"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                                  {done&&<i className="ti ti-check" style={{fontSize:10,color:"#fff"}}/>}
+                              <div key={ii} onClick={()=>setChecked(p=>({...p,[k]:!p[k]}))} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 10px",borderRadius:8,background:done?C.greenbg:"#1a1a1a",cursor:"pointer",border:`1px solid ${done?C.green2:C.border}`}}>
+                                <div style={{width:17,height:17,borderRadius:4,border:`1.5px solid ${done?C.green:C.border2}`,background:done?C.green:"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                  {done&&<i className="ti ti-check" style={{fontSize:10,color:"#000"}}/>}
                                 </div>
-                                <span style={{fontSize:13,color:done?G[800]:"var(--color-text-primary)",textDecoration:done?"line-through":"none",lineHeight:1.5}}>{item}</span>
+                                <span style={{fontSize:13,color:done?C.green:C.text2,textDecoration:done?"line-through":"none",lineHeight:1.5}}>{item}</span>
                               </div>
                             );
                           })}
@@ -782,37 +699,37 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               )}
               {tab===4&&(
                 <div>
-                  <SectionLabel>Estimated cost to first sale</SectionLabel>
+                  <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Estimated cost to first sale</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-                    <div style={{background:G[50],borderRadius:10,padding:"14px",textAlign:"center"}}>
-                      <div style={{fontSize:11,color:G[600],fontWeight:500,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Minimum</div>
-                      <div style={{fontSize:24,fontWeight:500,color:G[800]}}>${(report.costs?.total_low||0).toLocaleString()}</div>
+                    <div style={{background:C.greenbg,borderRadius:10,padding:"16px",textAlign:"center",border:`1px solid ${C.green2}`}}>
+                      <div style={{fontSize:11,color:C.green,fontWeight:600,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Minimum</div>
+                      <div style={{fontSize:26,fontWeight:700,color:C.green}}>${(report.costs?.total_low||0).toLocaleString()}</div>
                     </div>
-                    <div style={{background:"var(--color-background-secondary)",borderRadius:10,padding:"14px",textAlign:"center"}}>
-                      <div style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:500,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>Comfortable</div>
-                      <div style={{fontSize:24,fontWeight:500}}>${(report.costs?.total_high||0).toLocaleString()}</div>
+                    <div style={{background:"#1a1a1a",borderRadius:10,padding:"16px",textAlign:"center",border:`1px solid ${C.border}`}}>
+                      <div style={{fontSize:11,color:C.text3,fontWeight:600,marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Comfortable</div>
+                      <div style={{fontSize:26,fontWeight:700,color:C.text}}>${(report.costs?.total_high||0).toLocaleString()}</div>
                     </div>
                   </div>
-                  <div style={{borderRadius:8,overflow:"hidden",border:"0.5px solid var(--color-border-tertiary)"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"8px 12px",background:"var(--color-background-secondary)",gap:8}}>
-                      <span style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)"}}>EXPENSE</span>
-                      <span style={{fontSize:11,fontWeight:500,color:G[600],textAlign:"right"}}>LOW</span>
-                      <span style={{fontSize:11,fontWeight:500,color:"var(--color-text-secondary)",textAlign:"right"}}>HIGH</span>
+                  <div style={{borderRadius:8,overflow:"hidden",border:`1px solid ${C.border}`}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"8px 12px",background:"#1a1a1a",gap:8}}>
+                      <span style={{fontSize:11,fontWeight:600,color:C.text3}}>EXPENSE</span>
+                      <span style={{fontSize:11,fontWeight:600,color:C.green,textAlign:"right"}}>LOW</span>
+                      <span style={{fontSize:11,fontWeight:600,color:C.text2,textAlign:"right"}}>HIGH</span>
                     </div>
                     {(report.costs?.breakdown||[]).map((row,i)=>(
-                      <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",borderTop:"0.5px solid var(--color-border-tertiary)",gap:8,alignItems:"center"}}>
+                      <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",borderTop:`1px solid ${C.border}`,gap:8,alignItems:"center"}}>
                         <div>
-                          <div style={{fontSize:13}}>{row.item}</div>
-                          {row.note&&<div style={{fontSize:11,color:"var(--color-text-tertiary)",marginTop:1}}>{row.note}</div>}
+                          <div style={{fontSize:13,color:C.text}}>{row.item}</div>
+                          {row.note&&<div style={{fontSize:11,color:C.text3,marginTop:1}}>{row.note}</div>}
                         </div>
-                        <div style={{fontSize:13,color:G[600],textAlign:"right",fontWeight:500}}>${row.low.toLocaleString()}</div>
-                        <div style={{fontSize:13,color:"var(--color-text-secondary)",textAlign:"right",fontWeight:500}}>${row.high.toLocaleString()}</div>
+                        <div style={{fontSize:13,color:C.green,textAlign:"right",fontWeight:600}}>${row.low.toLocaleString()}</div>
+                        <div style={{fontSize:13,color:C.text2,textAlign:"right",fontWeight:500}}>${row.high.toLocaleString()}</div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-            </Card>
+            </DarkCard>
           </div>
         </div>
       </>
