@@ -389,7 +389,10 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
       const txt=data.content.find(b=>b.type==="text")?.text||"";
       const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
       setReport(parsed);
-      if(user){await db.saveReport(user.id,form,parsed);}
+      if(user){
+        try{await db.saveReport(user.id,form,parsed);}
+        catch(e){console.log("Save failed (non-critical):",e);}
+      }
       setPhase("report");
     } catch(e){alert("Analysis failed. Please try again.");setPhase("form");}
   }
