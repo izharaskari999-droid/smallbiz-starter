@@ -372,7 +372,7 @@ export default function App() {
 
   function goHome(){setPhase("form");setStep(0);setReport(null);setChecked({});setShowDashboard(false);setShowGuestGate(false);setShowAuth(false);}
   function handleLogin(u){setUser(u);localStorage.setItem("invenio_user",JSON.stringify(u));setShowAuth(false);}
-  function handleLogout(){setUser(null);localStorage.removeItem("invenio_user");goHome();}
+ function handleGenerate(){if(user)analyze(user.name,user.email);else setShowGuestGate(true);} function handleLogout(){setUser(null);localStorage.removeItem("invenio_user");goHome();}
 
   const valid=[form.idea.trim().length>10,form.state&&form.city.trim(),form.type,true];
 
