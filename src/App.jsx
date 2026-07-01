@@ -73,7 +73,7 @@ const BUSINESS_TYPES = [
 
 const US_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
 
-const TABS = [{id:0,label:"Feasibility",icon:"ti-star"},{id:1,label:"Competition",icon:"ti-trophy"},{id:2,label:"Challenges",icon:"ti-alert-triangle"},{id:3,label:"Checklist",icon:"ti-checklist"},{id:4,label:"Budget",icon:"ti-currency-dollar"}];
+const TABS = [{id:0,label:"Feasibility",icon:"ti-star"},{id:1,label:"Competition",icon:"ti-trophy"},{id:2,label:"Challenges",icon:"ti-alert-triangle"},{id:3,label:"Checklist",icon:"ti-checklist"},{id:4,label:"Funding",icon:"ti-coin"},{id:5,label:"Budget",icon:"ti-currency-dollar"}];
 
 function Logo({size=32}) {
   return (
@@ -381,8 +381,8 @@ export default function App() {
     setPhase("loading");
     if(window.emailjs){window.emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{user_name:name,user_email:email,business_idea:form.idea,city:form.city,state:form.state,business_type:form.type}).catch(()=>{});}
     const prompt=`You are a small business advisor. Return ONLY a valid JSON object, no markdown:
-{"feasibility":{"score":<1-10>,"summary":"<2-3 sentences>"},"competition":{"level":"<Low|Medium|High>","summary":"<2-3 sentences about ${form.city}, ${form.state}>","competitors":["<type1>","<type2>","<type3>"],"gap":"<one sentence>"},"challenges":[{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"}],"checklist":[{"category":"Legal & registration","items":["<step>","<step>","<step>"]},{"category":"Financial setup","items":["<step>","<step>"]},{"category":"Operations","items":["<step>","<step>","<step>"]},{"category":"Marketing & launch","items":["<step>","<step>"]}],"costs":{"total_low":<number>,"total_high":<number>,"breakdown":[{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"}]}}
-Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${form.type} | ${form.location==="home"?"Home-based":"Physical location"}`;
+{"feasibility":{"score":<1-10>,"summary":"<2-3 sentences>"},"competition":{"level":"<Low|Medium|High>","summary":"<2-3 sentences about ${form.city}, ${form.state}>","competitors":["<type1>","<type2>","<type3>"],"gap":"<one sentence>"},"challenges":[{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"},{"title":"<title>","detail":"<1-2 sentences>"}],"checklist":[{"category":"Legal & registration","items":["<step>","<step>","<step>"]},{"category":"Financial setup","items":["<step>","<step>"]},{"category":"Operations","items":["<step>","<step>","<step>"]},{"category":"Marketing & launch","items":["<step>","<step>"]}],"funding":[{"name":"<program name>","type":"<Grant|Loan|Tax Credit|Other>","description":"<1 sentence>","eligibility":"<brief eligibility note>"},{"name":"<program name>","type":"<Grant|Loan|Tax Credit|Other>","description":"<1 sentence>","eligibility":"<brief eligibility note>"},{"name":"<program name>","type":"<Grant|Loan|Tax Credit|Other>","description":"<1 sentence>","eligibility":"<brief eligibility note>"},{"name":"<program name>","type":"<Grant|Loan|Tax Credit|Other>","description":"<1 sentence>","eligibility":"<brief eligibility note>"}],"costs":{"total_low":<number>,"total_high":<number>,"breakdown":[{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"},{"item":"<name>","low":<number>,"high":<number>,"note":"<brief>"}]}}
+Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${form.type} | ${form.location==="home"?"Home-based":"Physical location"}. Include federal AND ${form.state}-specific funding programs, grants, loans and tax credits relevant to this type of business.`;
     try {
       const res=await fetch("/api/proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:prompt}]})});
       const data=await res.json();
@@ -394,7 +394,99 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
     } catch(e){alert("Analysis failed. Please try again.");setPhase("form");}
   }
 
-  function handleGenerate(){if(user)analyze(user.name,user.email);else setShowGuestGate(true);}
+  function downloadPDF() {
+    if(!report) return;
+    const typeColor={"Grant":"#22c55e","Loan":"#3b82f6","Tax Credit":"#f59e0b","Other":"#a1a1aa"};
+    const typeBg={"Grant":"#052e16","Loan":"#1e3a5f","Tax Credit":"#431407","Other":"#1a1a1a"};
+    const html=`<!DOCTYPE html><html><head><title>Invenio Business AI Report</title><style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0a0a;color:#fff;padding:40px;max-width:900px;margin:0 auto}
+    .header{display:flex;align-items:center;gap:16px;padding-bottom:24px;border-bottom:2px solid #22c55e;margin-bottom:32px}
+    .logo{width:52px;height:52px;background:#16a34a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff}
+    .brand{font-size:22px;font-weight:800;color:#fff;letter-spacing:0.05em}
+    .brand span{color:#22c55e}
+    .meta{font-size:13px;color:#71717a;margin-top:4px}
+    .section{margin-bottom:32px}
+    h2{font-size:13px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #1e1e1e}
+    .score-box{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:20px;display:flex;align-items:center;gap:20px}
+    .score-num{font-size:48px;font-weight:900;color:#22c55e}
+    .score-text{font-size:14px;color:#a1a1aa;line-height:1.7}
+    .card{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:16px;margin-bottom:10px}
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:8px}
+    .challenge-num{width:28px;height:28px;background:#431407;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f59e0b;margin-right:10px;vertical-align:middle}
+    .check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #1a1a1a}
+    .check-box{width:16px;height:16px;border:1.5px solid #22c55e;border-radius:3px;flex-shrink:0;margin-top:2px}
+    .budget-row{display:grid;grid-template-columns:1fr 80px 80px;gap:8px;padding:10px 12px;border-bottom:1px solid #1a1a1a;font-size:13px}
+    .budget-header{background:#1a1a1a;border-radius:6px 6px 0 0;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.05em}
+    .green{color:#22c55e}
+    .gray{color:#a1a1aa}
+    .funding-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-bottom:6px}
+    .footer{margin-top:40px;padding-top:20px;border-top:1px solid #1e1e1e;text-align:center;font-size:11px;color:#52525b}
+    @media print{body{background:#0a0a0a;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+    </style></head><body>
+    <div class="header">
+      <div class="logo">I</div>
+      <div>
+        <div class="brand">INVENIO <span>Business AI</span></div>
+        <div class="meta">Business Feasibility Report · ${form.type} · ${form.city}, ${form.state} · ${new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Business Idea</h2>
+      <div class="card"><p style="color:#e4e4e7;line-height:1.7">${form.idea}</p></div>
+    </div>
+    <div class="section">
+      <h2>Feasibility Score</h2>
+      <div class="score-box">
+        <div class="score-num">${report.feasibility?.score||0}<span style="font-size:20px;color:#71717a">/10</span></div>
+        <div class="score-text">${report.feasibility?.summary||""}</div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Competition Analysis — ${report.competition?.level||""}</h2>
+      <div class="card">
+        <p style="color:#a1a1aa;line-height:1.7;margin-bottom:12px">${report.competition?.summary||""}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          ${(report.competition?.competitors||[]).map(c=>`<span style="background:#052e16;color:#22c55e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">${c}</span>`).join("")}
+        </div>
+        <div style="background:#052e16;border-radius:8px;padding:10px 14px;color:#22c55e;font-size:13px"><strong>Market gap:</strong> ${report.competition?.gap||""}</div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Challenges to Expect</h2>
+      ${(report.challenges||[]).map((c,i)=>`<div class="card" style="margin-bottom:8px"><span class="challenge-num">${i+1}</span><strong style="color:#fff">${c.title}</strong><p style="color:#a1a1aa;font-size:13px;margin-top:6px;line-height:1.6">${c.detail}</p></div>`).join("")}
+    </div>
+    <div class="section">
+      <h2>Launch Checklist — ${form.state}</h2>
+      ${(report.checklist||[]).map(cat=>`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${cat.category}</div>${cat.items.map(item=>`<div class="check"><div class="check-box"></div><span style="font-size:13px;color:#a1a1aa;line-height:1.5">${item}</span></div>`).join("")}</div>`).join("")}
+    </div>
+    <div class="section">
+      <h2>Funding Opportunities</h2>
+      ${(report.funding||[]).map(f=>`<div class="card" style="margin-bottom:8px"><span class="funding-badge" style="background:${typeBg[f.type]||"#1a1a1a"};color:${typeColor[f.type]||"#a1a1aa"}">${f.type}</span><div style="font-weight:700;color:#fff;margin-bottom:4px">${f.name}</div><div style="font-size:13px;color:#a1a1aa;margin-bottom:4px">${f.description}</div><div style="font-size:12px;color:#71717a"><strong>Eligibility:</strong> ${f.eligibility}</div></div>`).join("")}
+    </div>
+    <div class="section">
+      <h2>Estimated Budget to First Sale</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:#052e16;border-radius:10px;padding:16px;text-align:center"><div style="font-size:11px;color:#22c55e;font-weight:700;margin-bottom:4px;text-transform:uppercase">Minimum</div><div style="font-size:28px;font-weight:900;color:#22c55e">${(report.costs?.total_low||0).toLocaleString()}</div></div>
+        <div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:16px;text-align:center"><div style="font-size:11px;color:#71717a;font-weight:700;margin-bottom:4px;text-transform:uppercase">Comfortable</div><div style="font-size:28px;font-weight:900;color:#fff">${(report.costs?.total_high||0).toLocaleString()}</div></div>
+      </div>
+      <div style="border-radius:8px;overflow:hidden;border:1px solid #1e1e1e">
+        <div class="budget-row budget-header"><span style="color:#71717a">Expense</span><span style="color:#22c55e;text-align:right">Low</span><span style="color:#a1a1aa;text-align:right">High</span></div>
+        ${(report.costs?.breakdown||[]).map(r=>`<div class="budget-row"><div><div style="color:#e4e4e7">${r.item}</div>${r.note?`<div style="font-size:11px;color:#71717a">${r.note}</div>`:""}</div><div class="green" style="text-align:right;font-weight:600">${r.low.toLocaleString()}</div><div class="gray" style="text-align:right">${r.high.toLocaleString()}</div></div>`).join("")}
+      </div>
+    </div>
+    <div class="footer">Generated by INVENIO Business AI · www.invenioai.us · ${new Date().toLocaleDateString()}<br/>This report is for informational purposes only. Always consult a licensed professional before making business decisions.</div>
+    </body></html>`;
+    const blob=new Blob([html],{type:"text/html"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`Invenio-Report-${form.type.replace(/[^a-z0-9]/gi,"-")}-${form.city}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   const inp={width:"100%",boxSizing:"border-box",fontSize:14,background:"#1a1a1a",border:`1px solid ${C.border2}`,color:C.text,borderRadius:8,padding:"10px 12px",outline:"none"};
 
@@ -585,6 +677,9 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               </div>
               <div style={{display:"flex",gap:8}}>
                 {user&&<div style={{fontSize:12,background:C.greenbg,color:C.green,padding:"5px 12px",borderRadius:20,display:"flex",alignItems:"center",gap:5,fontWeight:600,border:`1px solid ${C.green2}`}}><i className="ti ti-check"/>Report saved</div>}
+                <button onClick={downloadPDF} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:C.greenbg,border:`1px solid ${C.green2}`,color:C.green,cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontWeight:600}}>
+                  <i className="ti ti-download" style={{fontSize:14}}/>Download PDF
+                </button>
                 <button onClick={goHome} style={{fontSize:13,padding:"8px 16px",borderRadius:8,background:"transparent",border:`1px solid ${C.border2}`,color:C.text2,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                   <i className="ti ti-refresh"/>New report
                 </button>
@@ -595,7 +690,7 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
               {[
                 {label:"Feasibility",value:`${score}/10`,color:scoreColor,icon:"ti-star"},
                 {label:"Competition",value:compLevel,color:compColor,icon:"ti-trophy"},
-                {label:"Progress",value:`${doneCount}/${total}`,color:C.green,icon:"ti-checklist"},
+                {label:"Funding",value:`${(report.funding||[]).length} programs`,color:C.amber,icon:"ti-coin"},
                 {label:"Min. budget",value:`$${(report.costs?.total_low||0).toLocaleString()}`,color:C.green,icon:"ti-currency-dollar"},
               ].map(m=>(
                 <DarkCard key={m.label} style={{padding:"1rem"}}>
@@ -698,6 +793,34 @@ Business: ${form.idea} | State: ${form.state} | City: ${form.city} | Type: ${for
                 </div>
               )}
               {tab===4&&(
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Funding opportunities</div>
+                  <div style={{background:C.greenbg,border:`1px solid ${C.green2}`,borderRadius:8,padding:"10px 14px",display:"flex",gap:8,marginBottom:16}}>
+                    <i className="ti ti-info-circle" style={{fontSize:15,color:C.green,flexShrink:0,marginTop:1}}/>
+                    <div style={{fontSize:13,color:C.green,lineHeight:1.6}}>These are federal and {form.state}-specific programs your business may qualify for. Always verify eligibility directly with the program.</div>
+                  </div>
+                  {(report.funding||[]).length===0?(
+                    <div style={{textAlign:"center",padding:"2rem",color:C.text3}}>No specific funding programs found. Try regenerating your report.</div>
+                  ):(
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      {(report.funding||[]).map((f,i)=>{
+                        const typeColor={"Grant":C.green,"Loan":"#3b82f6","Tax Credit":C.amber,"Other":C.text3};
+                        const typeBg={"Grant":C.greenbg,"Loan":"rgba(59,130,246,0.1)","Tax Credit":C.amberbg,"Other":"#1a1a1a"};
+                        const typeBorder={"Grant":C.green2,"Loan":"#1d4ed8","Tax Credit":"#92400e","Other":C.border};
+                        return (
+                          <div key={i} style={{background:"#111",border:`1px solid ${C.border}`,borderRadius:10,padding:"14px"}}>
+                            <span style={{display:"inline-block",background:typeBg[f.type]||"#1a1a1a",color:typeColor[f.type]||C.text3,padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:700,marginBottom:8,border:`1px solid ${typeBorder[f.type]||C.border}`}}>{f.type}</span>
+                            <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:6}}>{f.name}</div>
+                            <div style={{fontSize:13,color:C.text2,marginBottom:8,lineHeight:1.5}}>{f.description}</div>
+                            <div style={{fontSize:12,color:C.text3,padding:"8px",background:"#1a1a1a",borderRadius:6}}><strong style={{color:C.text2}}>Eligibility:</strong> {f.eligibility}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+              {tab===5&&(
                 <div>
                   <div style={{fontSize:11,fontWeight:600,color:C.text3,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:14}}>Estimated cost to first sale</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
